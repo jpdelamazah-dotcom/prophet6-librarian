@@ -742,6 +742,8 @@ body.stagefull{overflow:hidden}
 .bcard .cw{fill:none;stroke-width:2}.bcard .cl{font:700 10px "IBM Plex Sans",sans-serif;letter-spacing:.05em}.bcard .cs{font:500 9.5px "IBM Plex Sans",sans-serif;fill:#9b9ba1}
 .bcard .ct{fill:#1c1c20}.bcard .cbg{fill:#121316;stroke:#1f2024}.bcard .cgl{stroke:rgba(255,255,255,.06)}
 .stage.arch.full .bcards{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
+
+.crecs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.crec{display:flex;flex-direction:column;align-items:flex-start;padding:7px 12px;border-radius:10px}.crec small{font-size:11px;color:#9b9ba1}
 </style>
 </head>
 <body>
@@ -1792,15 +1794,37 @@ const RECIPE_EXAMPLE={nombre:"Ejemplo Pad Suave",descripcion:"Pad cálido de dos
 function parseRecipe(txt){ const j=JSON.parse(txt); const p=j.parametros||j.params||{}; const ok=[],bad=[];
   for(const [k,v] of Object.entries(p)){ if(P[k]==null){ bad.push(k); continue; } const r=RANGE[k]||[0,255]; const n=Math.round(+v); if(isNaN(n)){ bad.push(k); continue; } ok.push([k,Math.max(r[0],Math.min(r[1],n))]); }
   return {nombre:(j.nombre||j.name||"").slice(0,20),descripcion:j.descripcion||"",ok,bad}; }
+const CLAUDE_RECIPES=[
+ {nombre:"Spring2 Cuerdas",para:"Max Richter · Spring 2",descripcion:"Ensamble de cuerdas suave para los acordes sostenidos: dos sierras levemente desafinadas (vibran como una sección de violines), filtro tibio que se abre un poco al entrar, ataque de arco lento y cola larga. Chorus para ensanchar y reverb de sala. Con aftertouch, más vibrato. Tócalo en acordes, en el registro medio, suave.",
+  parametros:{osc1Freq:24,osc1Sync:0,osc1Shape:127,osc1PW:127,osc1Lvl:115,osc2Freq:24,osc2Fine:134,osc2Shape:127,osc2PW:127,osc2Lvl:105,osc2Low:0,osc2Key:1,subLvl:0,noise:6,slop:45,
+  lpFreq:72,lpRes:18,lpKey:1,lpVel:1,lpEnv:150,fA:55,fD:80,fS:70,fR:75,hpFreq:8,hpRes:0,hpEnv:127,hpKey:0,hpVel:0,
+  vcaAmt:127,vcaA:48,vcaD:75,vcaS:118,vcaR:72,vcaVel:1,
+  lfoFreq:150,lfoAmt:5,lfoShape:0,lfoSync:0,lfoF1:1,lfoF2:1,lfoPW:0,lfoAmp:0,lfoLP:0,lfoHP:0,
+  pmFilt:127,pmOsc2:0,pmF1:0,pmShape:0,pmPW:0,pmLP:0,pmHP:0,
+  atAmt:172,atF1:0,atF2:0,atLP:0,atHP:0,atVCA:0,atLFO:1,
+  fxOn:1,fxASel:3,fxAMix:55,fxAP1:40,fxAP2:70,fxASync:0,fxBSel:10,fxBMix:48,fxBP1:150,fxBP2:70,fxBSync:0,
+  dist:0,pan:90,volume:110,glideOn:0,glideRate:0,uniOn:0,arpOn:0,pbend:2}},
+ {nombre:"Spring2 Violin",para:"Max Richter · Spring 2",descripcion:"Violín solista para la melodía: sierra principal con un toque de octava arriba para el brillo del arco, filtro que respira con la nota, ataque corto pero no seco, y portamento suave entre notas (glide). Monofónico en unison de 1 voz. El vibrato aparece al presionar la tecla (aftertouch): toca la melodía y presiona en las notas largas.",
+  parametros:{osc1Freq:24,osc1Sync:0,osc1Shape:127,osc1PW:127,osc1Lvl:127,osc2Freq:36,osc2Fine:127,osc2Shape:150,osc2PW:127,osc2Lvl:30,osc2Low:0,osc2Key:1,subLvl:0,noise:10,slop:20,
+  lpFreq:92,lpRes:40,lpKey:2,lpVel:1,lpEnv:160,fA:30,fD:65,fS:75,fR:55,hpFreq:20,hpRes:0,hpEnv:127,hpKey:0,hpVel:0,
+  vcaAmt:127,vcaA:26,vcaD:60,vcaS:120,vcaR:50,vcaVel:1,
+  lfoFreq:155,lfoAmt:0,lfoShape:0,lfoSync:0,lfoF1:1,lfoF2:1,lfoPW:0,lfoAmp:0,lfoLP:0,lfoHP:0,
+  pmFilt:127,pmOsc2:0,pmF1:0,pmShape:0,pmPW:0,pmLP:0,pmHP:0,
+  atAmt:185,atF1:0,atF2:0,atLP:0,atHP:0,atVCA:0,atLFO:1,
+  fxOn:1,fxASel:3,fxAMix:25,fxAP1:30,fxAP2:50,fxASync:0,fxBSel:10,fxBMix:55,fxBP1:170,fxBP2:70,fxBSync:0,
+  dist:0,pan:20,volume:115,glideOn:1,glideRate:28,uniOn:1,uniMode:0,arpOn:0,pbend:2}}
+];
 function renderRecipePage(){
   const pg=$("#recipePage"); const prev=state.recipeTxt||"";
   pg.innerHTML=`<div class="page"><div class="phead"><div><h2>Recetas</h2><p class="note">Una receta es un sonido escrito como lista de parámetros. Pégala aquí (por ejemplo, la que te dé Claude a partir de una canción), cárgala en el Prophet para tocarla y, si te gusta, guárdala como preset.</p></div></div>
    <div class="rgrid"><div>
+    <div class="crecs"><span class="note">Recetas de Claude:</span>${CLAUDE_RECIPES.map((r,i)=>`<button class="crec" data-crec="${i}"><b>${esc(r.nombre)}</b><small>${esc(r.para)}</small></button>`).join("")}</div>
     <div class="steps3"><span><b>1</b> Pegar o abrir receta</span><span><b>2</b> Cargar en el Prophet</span><span><b>3</b> Guardar como preset</span></div>
     <textarea id="rcTxt" spellcheck="false" placeholder='{"nombre":"Mi sonido","parametros":{"osc1Freq":24, ...}}'>${esc(prev)}</textarea>
     <div class="row"><button id="rcOpen">Abrir archivo .json…</button><input type="file" id="rcFile" accept=".json" hidden><button id="rcEx">Ver ejemplo</button><button id="rcFrom">Receta del sonido actual</button><button id="rcCopy">Copiar</button></div>
    </div><div id="rcPrev" class="rprev"></div></div></div>`;
   const ta=$("#rcTxt"); ta.oninput=()=>{ state.recipeTxt=ta.value; preview(); };
+  pg.querySelectorAll("[data-crec]").forEach(b=>b.onclick=()=>{ const r=CLAUDE_RECIPES[+b.dataset.crec]; ta.value=JSON.stringify({nombre:r.nombre,descripcion:r.descripcion,parametros:r.parametros},null,1); state.recipeTxt=ta.value; preview(); });
   $("#rcOpen").onclick=()=>$("#rcFile").click(); $("#rcFile").onchange=async e=>{ ta.value=await e.target.files[0].text(); state.recipeTxt=ta.value; preview(); e.target.value=""; };
   $("#rcEx").onclick=()=>{ ta.value=JSON.stringify(RECIPE_EXAMPLE,null,1); state.recipeTxt=ta.value; preview(); };
   $("#rcFrom").onclick=async()=>{ if(state.out) await readEdit(); const d=state.editBuffer||(state.sel!=null?currentData(state.sel):null); if(!d) return toast("Lee primero un sonido.");
