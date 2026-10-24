@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prophet-6 Librarian</title>
+<title>Prophet 6</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#17181A">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Prophet-6">
+<meta name="apple-mobile-web-app-title" content="Prophet 6">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
@@ -534,12 +534,139 @@ body{font-family:"IBM Plex Sans",-apple-system,system-ui,sans-serif}
 @media (max-width:1400px){ .brand small{display:none} #search{width:170px!important} .tabs .tab{padding:7px 9px} #status{display:none} }
 @media (max-width:1200px){ #search{width:120px!important} .tabs .tab{padding:6px 7px;font-size:13px} #modeSeg button{padding:6px 8px} }
 @media (max-width:900px){ #search{display:none} .tabs{overflow-x:auto;min-width:0} }
+
+/* ===== ESCENARIO + ONDA ===== */
+.brand{display:flex;align-items:center;gap:9px}.brand b{font-size:19px;letter-spacing:-.01em}
+.bled{width:10px;height:10px;border-radius:5px;background:#ff6a3d;box-shadow:0 0 10px #ff6a3d;display:inline-block}
+.stage{display:flex;border-radius:18px;overflow:hidden;margin:4px 0 16px;box-shadow:0 10px 30px rgba(23,24,26,.18),0 2px 6px rgba(23,24,26,.12)}
+.cheek{width:16px;flex:none;background:linear-gradient(90deg,#4a2a17,#7a4a2a 35%,#5c341d 60%,#3d2213),repeating-linear-gradient(0deg,rgba(0,0,0,.08) 0 3px,transparent 3px 9px);background-blend-mode:multiply}
+.sface{flex:1;min-width:0;background:radial-gradient(120% 140% at 20% 0%,#24262b,#141416 60%);display:grid;grid-template-columns:1.7fr 1fr 1.2fr;grid-template-rows:auto 130px;gap:12px;padding:14px 16px;color:#e9e9e6}
+.slcd{grid-column:1/-1;display:flex;align-items:center;gap:14px}
+.slcdn{font:600 34px "IBM Plex Mono",ui-monospace,Menlo,monospace;color:#ff6a3d;background:#0a0a0b;border:1px solid #2a2c31;border-radius:8px;padding:2px 12px;letter-spacing:.1em;text-shadow:0 0 12px rgba(255,106,61,.55)}
+.slcdt{display:flex;flex-direction:column;min-width:0;flex:1}.slcdt b{font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.slcdt span{font-size:12.5px;color:#a9abb1}
+.sled{width:12px;height:12px;border-radius:6px;background:#3a2018;box-shadow:inset 0 0 2px #000;transition:.08s}.sled.on{background:#ff4b2b;box-shadow:0 0 14px #ff4b2b}
+.sbox{background:#0b0b0d;border:1px solid #26282d;border-radius:12px;padding:8px 10px 10px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.sbox canvas{flex:1;width:100%;min-height:0;display:block}
+.slab{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:#8b8e95}.slab b{font:500 12px "IBM Plex Mono",monospace;text-transform:none;letter-spacing:0;color:#ffb38f;white-space:nowrap}
+.slab i{display:inline-block;width:10px;height:3px;border-radius:2px;margin:0 4px 2px 8px;vertical-align:middle}.slab .kf{background:#e8b04a}.slab .ka{background:#6ccea0}
+.sscope{grid-column:auto}.ssrc{position:absolute}
+.sface{position:relative}.ssrc{top:16px;right:14px;display:flex;background:#1f2125;border-radius:9px;padding:3px}
+.ssrc button{border:0;background:transparent;color:#a9abb1;font:inherit;font-size:12px;padding:6px 10px;border-radius:7px;cursor:pointer}.ssrc button.act{background:#ff6a3d;color:#1a0b05;font-weight:600}
+@media (max-width:1100px){ .sface{grid-template-columns:1fr 1fr;grid-template-rows:auto 110px 110px} .sscope{grid-column:1/-1} }
+.ftile{transition:transform .15s ease,box-shadow .15s ease}.ftile:hover{transform:translateY(-3px);box-shadow:0 8px 18px rgba(23,24,26,.12)}.ftile:active{transform:scale(.98)}
+.rplay{transition:transform .12s ease}.rplay:hover{transform:scale(1.08)}
+.rplay.on{animation:pulse 1.2s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(194,65,12,.45)}50%{box-shadow:0 0 0 7px rgba(194,65,12,0)}}
+@media (prefers-reduced-motion:reduce){ .rplay.on{animation:none} .ftile{transition:none} }
+
+/* ================= LOOK LOGIC PRO ================= */
+:root{--bg:#232325;--panel:#2c2c2e;--card:#2f2f31;--line:#161617;--txt:#e6e6e6;--dim:#9b9ba1;--acc:#ff6a3d;--num:#ff8a5c;--sel:#2f6fd6;--red:#ff5f57;--green:#30d158;color-scheme:dark}
+html,body{background:var(--bg);color:var(--txt)}
+header{background:linear-gradient(#444446,#38383a);border-bottom:1px solid #111;box-shadow:inset 0 1px 0 rgba(255,255,255,.08);height:58px}
+.brand b{color:#f2f2f2}
+.tabs{background:#2a2a2c;border:1px solid #1a1a1b;border-radius:8px;padding:2px;gap:1px;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+.tab{color:#c9c9cd;border-radius:6px}.tab:hover{background:#3a3a3d;color:#fff}.tab.act{background:linear-gradient(#5b5b5f,#4a4a4d);color:#fff;box-shadow:0 1px 0 rgba(255,255,255,.08) inset}
+.hlcd{display:flex;align-items:center;gap:14px;height:42px;padding:0 14px;border-radius:9px;background:linear-gradient(#1c1d20,#141517);border:1px solid #0c0c0d;box-shadow:inset 0 1px 3px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.06);min-width:0;flex:1;max-width:470px}
+.hlnum{font:600 22px "IBM Plex Mono",ui-monospace,Menlo,monospace;color:#ff6a3d;text-shadow:0 0 10px rgba(255,106,61,.5);letter-spacing:.08em}
+.hlname{flex:1;min-width:0;font-size:14px;font-weight:600;color:#f1f1f1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hlbpm,.hlnote{display:flex;flex-direction:column;align-items:center;line-height:1}.hlbpm b,.hlnote b{font:600 16px "IBM Plex Mono",monospace;color:#e8e8e8}.hlbpm small,.hlnote small{font-size:8.5px;letter-spacing:.12em;color:#8e8e93;margin-top:3px}
+#search,select,input[type=text],input[type=number],textarea{background:#1f1f21!important;border:1px solid #111!important;color:#eee!important;box-shadow:inset 0 1px 2px rgba(0,0,0,.4)}
+#search{border-radius:7px!important}
+.mode{background:#2a2a2c;border-color:#1a1a1b}.mode button{color:#b8b8bc}.mode button.act{background:linear-gradient(#5b5b5f,#4a4a4d);color:#fff;box-shadow:none}.mode button[data-mode="editar"].act{background:linear-gradient(#c8463a,#a83a30);color:#fff}
+button{background:linear-gradient(#4a4a4d,#3e3e41);border:1px solid #1a1a1b;color:#ececec;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}button:hover{background:linear-gradient(#56565a,#48484b);border-color:#111}
+button.pri{background:linear-gradient(#3b82f6,#2563d9);border-color:#1e4fae;color:#fff}button.pri:hover{background:linear-gradient(#4a8df8,#2c6ce0)}
+.conn{color:#b8b8bc}
+.libnav,#side{background:#2a2a2c;border-color:#151516}
+.nsec{color:#8e8e93;font-weight:700}.nitem{color:#dadadd;border-radius:5px}.nitem:hover{background:#353538}.nitem.act{background:var(--sel);color:#fff}.nitem.act .nc{color:#dbe6ff}.nitem .nc{color:#7d7d82}
+.libmain,.libscroll{background:var(--bg)}
+.libhead h2{color:#f2f2f2}.h2org{color:#9b9ba1}.hint,.note{color:#8e8e93}
+.libt thead th{background:#29292b;color:#8e8e93;border-bottom:1px solid #151516}
+.libt tbody tr:nth-child(even) td{background:#262628}
+.libt td{border-bottom:1px solid #1d1d1f}
+.lrow:hover td{background:#303033!important}.lrow.sel td{background:var(--sel)!important;color:#fff}.lrow.sel td:first-child{box-shadow:none}.lrow.sel .nm2,.lrow.sel .c-num,.lrow.sel .c-bpm{color:#dbe6ff}
+.nm1{color:#ececec}.nm2{color:#8e8e93}.c-num,.c-bpm{color:#9b9ba1}
+.rplay{background:#3a3a3d;border-color:#151516;color:#e8e8e8}.lrow:hover .rplay{background:#ff6a3d;border-color:#ff6a3d;color:#1a0b05}.rplay.on{background:#ff6a3d;border-color:#ff6a3d;color:#1a0b05}
+.cchip{background:#38383b;border-color:#1a1a1b;color:#dcdcdf}
+.org-GEO{background:#1f3557;color:#8fb8ff}.org-LUF{background:#3a2552;color:#c9a6ff}.org-FAC{background:#24402c;color:#8fd6a0}.org-OWN{background:#3a3a3d;color:#b8b8bc}
+.guide2{background:#2c2c2e;border-color:#18181a}.g2step{background:#262628;border-color:#1c1c1e}.g2txt p{color:#9b9ba1}
+.ftile{background:linear-gradient(#333336,#2b2b2e);color:var(--tf);border:1px solid #1a1a1b;box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}
+.ftile b{color:#f0f0f0}.ftile small{color:#9b9ba1;opacity:1}
+.ftile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--tf)}.ftile{position:relative;overflow:hidden}
+.ftile.act{border-color:var(--tf);background:linear-gradient(color-mix(in srgb,var(--tf) 22%,#333336),#2b2b2e)}
+.ochip{background:#38383b;border-color:#1a1a1b;color:#dcdcdf}.ochip.act{background:var(--sel);border-color:#1e4fae;color:#fff}
+.ochips>span{color:#b8b8bc}
+#side{color:var(--txt)}
+.fname{color:#f2f2f2;background:transparent}.fname:hover:not(:disabled),.fname:focus{background:#1f1f21}
+.fexp{color:#c9c9cd}.forg{color:#9b9ba1}.link2{color:#6aa1ff}
+.fsec{color:#8e8e93;border-top:1px solid #1d1d1f;padding-top:10px}
+.fsec::before{content:"▾ ";color:#6d6d72}
+.cbtn{background:#38383b;border-color:#1a1a1b;color:#dcdcdf}.cbtn.act{background:var(--sel);border-color:#1e4fae;color:#fff}
+.fenvs>div{background:#1f1f21;border-color:#151516}.ftags span{border-color:#3a3a3d;color:#b8b8bc}
+#nowbar{background:linear-gradient(#3a3a3c,#2f2f31);border-top:1px solid #111;box-shadow:0 -1px 0 rgba(255,255,255,.05) inset}
+.nbseg{color:#ff6a3d;border-color:#111;background:#151517}.nbdesc{color:#9b9ba1}.nbbpm{color:#b8b8bc}
+#pendbar{background:#3a2422;border-top:1px solid #5a2e2a;color:#ffb4aa}
+.setcard,.rprev,.gitem{background:#2c2c2e;border:1px solid #18181a}
+.maptab th{background:#29292b;color:#8e8e93}.maptab td{border-bottom:1px solid #1d1d1f}.maptab code{color:#b8b8bc}
+#panelWrap{background:var(--bg)}.p6name{color:#f2f2f2}
+.seg2{background:#2a2a2c;border-color:#1a1a1b}.seg2 button.act{background:linear-gradient(#5b5b5f,#4a4a4d);color:#fff}
+.wizbar{background:#2c2c2e;border-color:#18181a}.p6foot{color:#9b9ba1}
+#log{background:#1f1f21;color:#b8b8bc;border-color:#151516}
+.gh3{color:#8e8e93}.ghw{color:#7d7d82}.gitem p{color:#9b9ba1}
+.gseg button.act{background:var(--sel);border-color:#1e4fae;color:#fff}.grange input{accent-color:#3b82f6}
+.callout2{background:#3a3020;border:1px solid #5a4a26;color:#f3e2b8}
+dialog{background:#2f2f31;color:var(--txt);border:1px solid #111;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+#toast{background:#f2f2f2;color:#1d1e20;border-color:#f2f2f2}
+.stage{box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.sface{background:radial-gradient(120% 140% at 20% 0%,#2b2c31,#151517 60%)}
+h1,h2,h3{color:#f2f2f2}
+::-webkit-scrollbar{width:10px;height:10px}::-webkit-scrollbar-thumb{background:#4a4a4d;border-radius:6px;border:2px solid #232325}::-webkit-scrollbar-track{background:transparent}
+@media (max-width:1300px){ .hlbpm,.hlnote{display:none} .hlcd{max-width:300px} }
+@media (max-width:1100px){ .hlcd{display:none} }
+
+/* ===== Visor grande + panel estilo foto ===== */
+.sface{grid-template-columns:1.9fr 1fr!important;grid-template-rows:auto 118px 118px!important}
+.sspec{grid-column:1;grid-row:2/4}.sscope{grid-column:2;grid-row:2}.senv{grid-column:2;grid-row:3}
+.sspec canvas{min-height:200px}
+@media (max-width:1100px){ .sface{grid-template-columns:1fr!important;grid-template-rows:auto 220px 110px 110px!important} .sspec{grid-row:2}.sscope{grid-column:1;grid-row:3}.senv{grid-column:1;grid-row:4} }
+#panelWrap{background:radial-gradient(70% 55% at 50% 0%,#2b2b30 0%,#0b0b0c 62%,#050506 100%)!important}
+#panel>.stage{max-width:1500px;margin:0 auto 18px}
+.p6{background:linear-gradient(180deg,#1d1d20 0%,#111113 40%,#0a0a0b 100%)!important;border-top:1px solid #3a3a3e!important;border-left:16px solid #3d2414!important;border-right:16px solid #3d2414!important;box-shadow:0 30px 80px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.08)!important;border-radius:10px 10px 4px 4px}
+.p6grid .sec{border:1px solid rgba(214,52,46,.55)!important;border-radius:3px!important}
+.p6grid .sec>h4{color:#e9e9e9}.p6grid .sec>h4 span{background:#131315!important}
+.p6grid label{color:#d8d8d8!important}
+.p6grid .knob .k{background:radial-gradient(circle at 50% 28%,#4a4a4e 0%,#1c1c1e 45%,#060607 80%)!important;box-shadow:0 6px 10px rgba(0,0,0,.9),0 1px 0 rgba(255,255,255,.12) inset,0 0 0 3px #0d0d0e,0 0 0 4px #2c2c30!important}
+.p6grid .knob .k i{background:#f2f2f2!important;box-shadow:0 0 4px rgba(255,255,255,.4)}
+.led2.on,.p6 .led.on{background:#ff7a1a!important;box-shadow:0 0 10px #ff7a1a!important;color:#1a0b05}
+.kbd{position:relative;display:flex;height:150px;margin:18px -16px -18px;padding:10px 12px 0;background:linear-gradient(#0a0a0b,#050506);border-top:1px solid #222;border-radius:0 0 4px 4px}
+.kbd .kw{flex:1;position:relative;margin-right:2px;border-radius:0 0 6px 6px;background:linear-gradient(180deg,#d7d7d4 0%,#f3f3f1 18%,#e2e2df 80%,#b9b9b6 100%);box-shadow:inset 0 -6px 0 #a5a5a2,0 4px 8px rgba(0,0,0,.6);transition:background .06s}
+.kbd .kw small{position:absolute;bottom:12px;left:0;right:0;text-align:center;font:600 9px "IBM Plex Mono",monospace;color:#8b8b88}
+.kbd .kb{position:absolute;top:10px;height:58%;z-index:2;border-radius:0 0 4px 4px;background:linear-gradient(180deg,#2c2c2f,#0c0c0d 85%,#1c1c1e);box-shadow:0 4px 6px rgba(0,0,0,.8),inset 0 -4px 0 #000;transition:background .06s}
+.kbd .kw.on{background:linear-gradient(180deg,#ffb48f,#ff7a3d 60%,#e35a22);box-shadow:inset 0 -6px 0 #b8481a,0 0 24px rgba(255,106,61,.55)}
+.kbd .kb.on{background:linear-gradient(180deg,#ff8a50,#d4521c);box-shadow:0 0 18px rgba(255,106,61,.7)}
+
+.kbd{margin:18px -16px 14px!important}
+.brand{white-space:nowrap;flex:none}.brand b{white-space:nowrap}
+.hlcd{min-width:300px;flex:1 1 300px}
+#search{width:170px!important}
+@media (max-width:1300px){ .hlcd{min-width:200px} #search{width:130px!important} }
+
+header{gap:12px!important}
+#status{display:none!important}
+.tabs .tab{padding:6px 11px!important;font-size:13.5px}
+.mode button{padding:6px 11px}
+.hlcd{min-width:220px;flex:1 1 220px}
+@media (max-width:1600px){ .hlbpm,.hlnote{display:none} }
+@media (max-width:1350px){ .hlcd{display:none} #search{width:130px!important} }
+@media (max-width:1100px){ .tabs .tab{padding:6px 8px!important;font-size:13px} #search{width:100px!important} }
+
+@media (max-width:1500px){ .hlcd{display:none} }
+@media (max-width:1100px){ .mode button{padding:5px 7px;font-size:12.5px} .brand b{font-size:16px} .tabs .tab{padding:5px 7px!important;font-size:12.5px} #btnConnect{padding:6px 10px} }
 </style>
 </head>
 <body>
 <main>
 <header>
-  <div class="brand"><b>Prophet‑6</b><small>Librarian</small></div>
+  <div class="brand"><i class="bled"></i><b>Prophet 6</b></div>
   <nav class="tabs">
     <button class="tab act" data-view="all">Biblioteca</button>
     <button class="tab" data-view="panel">Panel</button>
@@ -549,6 +676,7 @@ body{font-family:"IBM Plex Sans",-apple-system,system-ui,sans-serif}
     <button class="tab" data-view="manual">Manual</button>
     <button class="tab" data-view="settings">Ajustes</button>
   </nav>
+  <div class="hlcd" id="hlcd" title="Sonido actual"><span class="hlnum" id="hlNum">---</span><span class="hlname" id="hlName">Prophet 6</span><span class="hlbpm"><b id="hlBpm">120</b><small>BPM</small></span><span class="hlnote"><b id="hlNote">—</b><small>NOTA</small></span></div>
   <input type="text" id="search" placeholder="Buscar sonido (nombre, «pad», «oscuro», «LFO»…)">
   <span class="sp"></span>
   <div class="mode" id="modeSeg" title="Qué puede hacer la app con tu Prophet">
@@ -776,15 +904,17 @@ function onMsg(e){
   const d=e.data;
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
   // --- mensajes que el Prophet transmite al tocarlo (solo se escuchan) ---
+  if((d[0]&0xF0)===0x90&&d.length>=3){ stageNote(d[1],d[2]); return; }
+  if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; stageHead(); schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
     else if(cc===38){ const param=(n.msb<<7)|n.lsb, val=(n.vmsb<<7)|v;
       if(param===1088){ state.seqPlaying=!!val; schedulePanelIfLive(); return; }
-      if(param<236){ if(state.learn){ /* modo aprender: se ignora */ } else { if(!state.editBuffer) state.editBuffer=new Uint8Array(UNPACKED); state.editBuffer[idx(param)]=val&0xFF; if(state.view==="panel"&&state.panelSrc==="edit") schedulePanel(); } } }
+      if(param<236){ if(state.learn){ /* modo aprender: se ignora */ } else { if(!state.editBuffer) state.editBuffer=new Uint8Array(UNPACKED); state.editBuffer[idx(param)]=val&0xFF; STG.edAt=Date.now(); kickStage(); if(state.view==="panel"&&state.panelSrc==="edit") schedulePanel(); } } }
     return; }
   if(d[0]!==0xF0||d[1]!==DSI||d[2]!==P6) return;
   const t=d[3];
@@ -998,14 +1128,14 @@ function navHtml(){
 }
 let renderT; function scheduleRender(){ clearTimeout(renderT); renderT=setTimeout(()=>{ if(state.view==="all") render(); },250); }
 function render(){
-  if(state.view!=="all") return;
+  if(state.view!=="all") return; document.querySelectorAll("#panel #stage").forEach(e=>e.remove());
   buildDupIdx();
   const g=$("#grid"), rows=libRows(); state.libOrder=rows;
   const sc=state.lib.scope, title=(SCOPES.find(x=>x[0]===sc)||[0,sc.startsWith("cat:")?sc.slice(4):sc.startsWith("org:")?(ORIGINS.find(o=>o[0]===sc.slice(4))||[0,""])[1]:"Todos"])[1];
   const total=state.slots.filter(Boolean).length+[...state.pending.keys()].filter(k=>!state.slots[k]).length;
   const th=(k,l,cls="")=>`<th class="${cls}${k?" sortable":""}" ${k?`data-sort="${k}"`:""}>${l}${state.lib.sort===k?(state.lib.dir>0?" ▲":" ▼"):""}</th>`;
   g.innerHTML=`<nav class="libnav">${navHtml()}</nav><div class="libmain">
-   <div class="libscroll">${lufBanner()}${guideHtml()}${topFilters()}
+   <div class="libscroll">${stageHtml()}${lufBanner()}${guideHtml()}${topFilters()}
    <div class="libhead"><h2>${esc(state.lib.fam?FAMS.find(f=>f.id===state.lib.fam).label:title)}${state.lib.org?` <span class="h2org">· ${esc({GEO:"GEOSynths",LUF:"Luftrum 15",FAC:"Fábrica",OWN:"Míos / otros"}[state.lib.org])}</span>`:""}</h2><span class="note">${rows.length} sonido(s)</span><span class="sp"></span><span class="hint">Clic: ver ficha · ▶: escuchar · doble clic: panel</span></div>
 
    ${total?`<div class="tablewrap"><table class="libt"><thead><tr>${th("","","c-play")}${th("num","N°","c-num")}${th("name","Sonido","c-name")}${th("cat","Categoría","c-cat")}${th("bpm","BPM","c-bpm")}</tr></thead>
@@ -1017,6 +1147,7 @@ function render(){
   const na=document.getElementById("navAuto"); if(na) na.onclick=ev=>{ ev.stopPropagation(); autoClassify(); };
   g.querySelectorAll("[data-fam]").forEach(b=>b.onclick=()=>{ state.lib.fam=state.lib.fam===b.dataset.fam?"":b.dataset.fam; save(); render(); });
   g.querySelectorAll("[data-org]").forEach(b=>b.onclick=()=>{ state.lib.org=b.dataset.org; save(); render(); });
+  wireStage();
   const lb=document.getElementById("lufGo"); if(lb) lb.onclick=lufRenameNow;
   wireGuide(); const gm=document.getElementById("gmini"); if(gm) gm.onclick=()=>{ state.guideHidden=false; save(); render(); };
   g.querySelectorAll(".rb").forEach(btn=>btn.onclick=()=>{ if(!state.out) return toast("Conecta primero el Prophet."); const b=+btn.dataset.bank; readRange(b*100,b*100+99); });
@@ -1077,7 +1208,7 @@ function moveSlot(from,to,swap){
   cleanPending(to); cleanPending(from); renderSlot(to); renderSlot(from); select(to); save(); renderStats();
 }
 function cleanPending(s){ const p=state.pending.get(s), x=state.slots[s]; if(p&&x&&p.every((v,i)=>v===x.data[i])) state.pending.delete(s); }
-function select(s,quiet){
+function select(s,quiet){ setTimeout(()=>{ try{stageHead();}catch(e){} },0);
   if(state.sel!==s&&!state.bpmLock) state.bpmNow=null;
   const prev=state.sel; state.sel=s; if(prev!=null&&prev!==s) renderSlot(prev); renderSlot(s);
   const nm=displayName(s), m=state.meta[s]||{};
@@ -1254,11 +1385,12 @@ function renderPanel(){
   const bigDeco=label=>`<div class="sw big deco"><div class="btn"></div><label>${label}</label></div>`;
   const greyDeco=(label,sub)=>`<div class="gbtnw deco"><div class="gbtn"></div><label>${label}${sub?"<br>"+sub:""}</label></div>`;
   const fxBtn=()=>`<div class="sw fxsel" id="fxSel" title="Elegir efecto A o B (solo cambia la vista)"><div class="duo"><span class="led2${FXV==="A"?" on":""}">A</span><span class="led2${FXV==="B"?" on":""}">B</span></div><div class="btn"></div><label>Effect</label></div>`;
-  el.innerHTML=`<div class="p6">${head}${wizBar()}${abs()}
+  document.querySelectorAll("#grid #stage").forEach(e=>e.remove());
+  el.innerHTML=`${stageHtml()}<div class="p6">${head}${wizBar()}${abs()}${kbdHtml()}
   <div class="hidden-params">${sec("SIN CONTROL PROPIO EN EL PANEL (se ajustan vía menús)",SL("Glide Mode","glideMode",L.glideMode)+SL("Unison Voces","uniMode",L.uniMode)+K("Seq Steps","seqLen",63,{sm:1,fmt:x=>x+1}))}</div>
   <div class="p6foot">${state.safe?"Para mover perillas desde aquí, elige el modo «Editar» (arriba a la derecha).":state.out?"<b>Editable:</b> arrastra las perillas ↕ (Shift = fino) o usa la rueda; clic en botones y displays. Cada cambio se envía al Prophet por NRPN (requiere GLOBALS → Param Receive = NRPN). Para conservarlo: <b>Guardar en slot…</b>":"Conecta el Prophet para editar desde el Mac."}
    · Arco ámbar = valor; bipolares: ámbar positivo, azul negativo.</div></div>`;
-  wirePanel();
+  wirePanel(); wireStage();
 }
 function fitPanel(){ const p=document.querySelector("#panel .p6"); if(!p) return; p.style.zoom=1; const avail=$("#panelWrap").clientWidth-30; const w=p.scrollWidth; p.style.zoom=Math.max(.55,Math.min(1.15,avail/w)).toFixed(3); }
 addEventListener("resize",()=>{ if(state.view==="panel") fitPanel(); });
@@ -1673,6 +1805,151 @@ async function lufRenameNow(){ const a=lufUnnamed(); if(!a.length) return toast(
   state.busy=false; progress(0); state.safe=wasSafe; state.allowPC=wasPC; bindPorts(); orgCache.clear(); save(); renderSafe();
   const r=await requestProgram(items[0][0]); const ok=r&&getName(r.data)===getName(items[0][1]);
   render(); renderPackSummary(); toast(ok?`Listo: ${n} sonidos de Luftrum con su nombre ✔`:`Se enviaron ${n} nombres, pero no pude verificar. Revisa en el Prophet el n.º ${items[0][0]}.`); log(`Luftrum: ${n} nombres escritos (${ok?"verificado":"sin verificar"}).`); }
+/* ================= ESCENARIO: osciloscopio + espectro + envolventes ================= */
+const STG={notes:new Map(), last:null, src:"sim", audio:null, raf:0, edAt:0, peak:0};
+const NOTE_N=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+function noteNm(n){ return NOTE_N[n%12]+(Math.floor(n/12)-1); }
+function envT(v){ return 0.002*Math.pow(10000,v/127); }           // 0→2 ms … 127→20 s (aprox. Prophet‑6)
+function stageData(){ const fresh=state.editBuffer&&Date.now()-STG.edAt<6000; return fresh?state.editBuffer:(state.sel!=null?currentData(state.sel):state.editBuffer)||null; }
+function envLevel(e,now){ // e={on,off,lvlOff}  devuelve 0..1
+  const A=envT(e.a),D=envT(e.d),S=e.s/127,R=envT(e.r);
+  const at=(t)=>t<A?t/A:S+(1-S)*Math.exp(-(t-A)/(D/4));
+  if(e.off==null) return at((now-e.on)/1000);
+  const t=(now-e.off)/1000; return e.lvlOff*Math.exp(-t/(R/4));
+}
+function stageNote(n,vel){ const now=performance.now(), d=stageData(); if(!d) return;
+  document.querySelectorAll(`[data-key="${n}"]`).forEach(k=>k.classList.toggle("on",vel>0)); if(vel>0){ STG.notes.set(n,{on:now,off:null,vel}); STG.last=n; const hn=document.getElementById("hlNote"); if(hn) hn.textContent=noteNm(n); }
+  else { const k=STG.notes.get(n); if(k&&k.off==null){ k.off=now; k.lvlA=envLevel({...ampE(d),...k,off:null},now); k.lvlF=envLevel({...filE(d),...k,off:null},now); } }
+  kickStage(); }
+function ampE(d){ return {a:pv(d,P.vcaA),d:pv(d,P.vcaD),s:pv(d,P.vcaS),r:pv(d,P.vcaR)}; }
+function filE(d){ return {a:pv(d,P.fA),d:pv(d,P.fD),s:pv(d,P.fS),r:pv(d,P.fR)}; }
+function curEnv(d,now){ // nivel actual de amp y filtro (nota más reciente)
+  const k=STG.last!=null?STG.notes.get(STG.last):null; if(!k) return {amp:null,fil:null,k:null};
+  const ea=ampE(d), ef=filE(d);
+  const amp=k.off==null?envLevel({...ea,on:k.on},now):envLevel({...ea,off:k.off,lvlOff:k.lvlA},now);
+  const fil=k.off==null?envLevel({...ef,on:k.on},now):envLevel({...ef,off:k.off,lvlOff:k.lvlF},now);
+  if(k.off!=null&&amp<0.002){ STG.notes.delete(STG.last); STG.last=[...STG.notes.keys()].pop()??null; }
+  return {amp,fil,k}; }
+function oscWave(shape,pw,p){ const t=shape/254, tri=1-4*Math.abs(p-0.5), saw=2*p-1, duty=0.5+((pw/254)-0.5)*0.9, pul=p<duty?1:-1;
+  return t<=0.5? tri*(1-t*2)+saw*(t*2) : saw*(1-(t-0.5)*2)+pul*((t-0.5)*2); }
+function biquad(x,fc,q,type){ // fc relativo a la frecuencia de muestreo (0..0.5)
+  fc=Math.min(0.49,Math.max(0.0005,fc)); const w=2*Math.PI*fc, al=Math.sin(w)/(2*q), c=Math.cos(w);
+  let b0,b1,b2; if(type==="lp"){ b0=(1-c)/2; b1=1-c; b2=(1-c)/2; } else { b0=(1+c)/2; b1=-(1+c); b2=(1+c)/2; }
+  const a0=1+al, a1=-2*c, a2=1-al; let x1=0,x2=0,y1=0,y2=0; const y=new Float32Array(x.length);
+  for(let pass=0;pass<3;pass++) for(let i=0;i<x.length;i++){ const v=(b0*x[i]+b1*x1+b2*x2-a1*y1-a2*y2)/a0; x2=x1;x1=x[i];y2=y1;y1=v; y[i]=v; }
+  return y; }
+function simSignal(d,f0,filLvl,N=1024,cycles=4){ // devuelve N muestras de `cycles` ciclos del oscilador 1
+  const sr=N/cycles*f0, semi=(pv(d,P.osc2Freq)-pv(d,P.osc1Freq))+(pv(d,P.osc2Fine)-50)/100, r2=Math.pow(2,semi/12);
+  const l1=pv(d,P.osc1Lvl)/127, l2=pv(d,P.osc2Lvl)/127, ls=pv(d,P.subLvl)/127, ln=pv(d,P.noise)/127;
+  const x=new Float32Array(N); for(let i=0;i<N;i++){ const ph=i/N*cycles;
+    x[i]=l1*oscWave(pv(d,P.osc1Shape),pv(d,P.osc1PW),ph%1)+l2*oscWave(pv(d,P.osc2Shape),pv(d,P.osc2PW),(ph*r2)%1)+ls*(((ph/2)%1)<0.5?1:-1)+ln*(Math.random()*2-1); }
+  const env=(pv(d,P.lpEnv)-127)/127, cut=Math.min(1,Math.max(0,pv(d,P.lpFreq)/164+env*(filLvl??0.6)*0.5));
+  const fcHz=20*Math.pow(1000,cut), q=0.6+pv(d,P.lpRes)/127*9;
+  let y=biquad(x,fcHz/sr,q,"lp"); const hp=pv(d,P.hpFreq)/164; if(hp>0.02) y=biquad(y,20*Math.pow(1000,hp)/sr,0.7+pv(d,P.hpRes)/127*6,"hp");
+  let m=0; for(const v of y) m=Math.max(m,Math.abs(v)); if(m>0) for(let i=0;i<N;i++) y[i]/=m;
+  return {y,sr,cutHz:fcHz}; }
+function spectrum(y,bins=48){ const N=y.length, out=new Float32Array(bins); // DFT de armónicos (cada 1/4 de f0 con 4 ciclos)
+  for(let k=1;k<=bins;k++){ let re=0,im=0; for(let i=0;i<N;i++){ const a=2*Math.PI*k*i/N; re+=y[i]*Math.cos(a); im-=y[i]*Math.sin(a); } out[k-1]=Math.sqrt(re*re+im*im)/N*2; }
+  return out; }
+function waveLabel(d){ const parts=[]; const o=(lvl,sh,n)=>{ if(pv(d,lvl)>8) parts.push(`${n} ${shapeWord(pv(d,sh))}`); };
+  o(P.osc1Lvl,P.osc1Shape,"Osc 1"); o(P.osc2Lvl,P.osc2Shape,"Osc 2"); if(pv(d,P.subLvl)>8) parts.push("Sub"); if(pv(d,P.noise)>8) parts.push("Ruido");
+  return parts.join(" + ")||"Sin osciladores"; }
+function shapeWord(s){ if(s<20) return "triangular"; if(s<108) return "tri→sierra"; if(s<=146) return "diente de sierra"; if(s<235) return "sierra→pulso"; return "pulso"; }
+/* ===== Visor estilo ChromaVerb: partículas por frecuencia + curva del filtro ===== */
+STG.parts=[];
+const FMIN=20,FMAX=20000, LFR=Math.log(FMAX/FMIN);
+function fx(f,w){ return Math.log(Math.max(FMIN,f)/FMIN)/LFR*w; }
+function filtCfg(d,filLvl){ const env=(pv(d,P.lpEnv)-127)/127, cut=Math.min(1,Math.max(0,pv(d,P.lpFreq)/164+env*(filLvl??0.6)*0.5));
+  return {lp:20*Math.pow(1000,cut), q:0.6+pv(d,P.lpRes)/127*9, hp:20*Math.pow(1000,pv(d,P.hpFreq)/164), hq:0.7+pv(d,P.hpRes)/127*6, hpOn:pv(d,P.hpFreq)>3}; }
+function filtH(f,c){ let x=f/c.lp, h=1/((1-x*x)*(1-x*x)+(x/c.q)*(x/c.q)); h=Math.min(h,4);              // 4 polos ≈ (2 polos)²
+  if(c.hpOn){ const y=c.hp/f; h*=Math.min(2,1/Math.sqrt((1-y*y)*(1-y*y)+(y/c.hq)*(y/c.hq))); } return h; }
+function partialsSim(d,f0){ const out=[]; const add=(lvl,shape,pw,base)=>{ if(lvl<=0.02) return; const t=shape/254, duty=0.5+((pw/254)-0.5)*0.9;
+    for(let n=1;n<=160&&base*n<FMAX;n++){ const tri=n%2?8/(Math.PI*Math.PI*n*n):0, saw=1/n, pul=Math.abs(Math.sin(Math.PI*n*duty))*2/n;
+      const a=t<=0.5? tri*(1-t*2)+saw*(t*2) : saw*(1-(t-0.5)*2)+pul*((t-0.5)*2); if(a>0.004) out.push({f:base*n,a:a*lvl}); } };
+  const semi=(pv(d,P.osc2Freq)-pv(d,P.osc1Freq))+(pv(d,P.osc2Fine)-50)/100;
+  add(pv(d,P.osc1Lvl)/127,pv(d,P.osc1Shape),pv(d,P.osc1PW),f0); add(pv(d,P.osc2Lvl)/127,pv(d,P.osc2Shape),pv(d,P.osc2PW),f0*Math.pow(2,semi/12));
+  const sl=pv(d,P.subLvl)/127; if(sl>0.02) for(let n=1;n<60&&f0/2*n<FMAX;n+=2) out.push({f:f0/2*n,a:sl/n});
+  return {list:out, noise:pv(d,P.noise)/127}; }
+function drawChroma(B,spec,curveCfg,energy){ const g=B.g,w=B.w,h=B.h, padB=16, padL=30, W=w-padL, H=h-padB;
+  g.clearRect(0,0,w,h); g.fillStyle="#101114"; g.fillRect(0,0,w,h);
+  g.font="10px 'IBM Plex Mono',monospace"; g.fillStyle="#6f7178"; g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1;
+  for(const f of [20,50,100,200,500,1000,2000,5000,10000,20000]){ const x=padL+fx(f,W); g.beginPath(); g.moveTo(x,0); g.lineTo(x,H); g.stroke(); g.fillText(f>=1000?(f/1000)+"k":String(f),Math.min(x-6,w-22),h-4); }
+  for(const p of [0,50,100,150,200]){ const y=H-p/200*H; g.beginPath(); g.moveTo(padL,y); g.lineTo(w,y); g.stroke(); g.fillText(p+"%",2,Math.max(10,y+3)); }
+  g.strokeStyle="rgba(255,255,255,.28)"; g.beginPath(); g.moveTo(padL,H/2); g.lineTo(w,H/2); g.stroke();
+  // partículas
+  const parts=STG.parts, now=performance.now();
+  if(spec){ for(const p of spec){ const k=Math.min(6,p.a*energy*14); let n=Math.floor(k)+(Math.random()<k%1?1:0);
+      for(let i=0;i<n&&parts.length<3200;i++){ const xr=fx(p.f*Math.pow(2,(Math.random()-.5)*0.7),1); const top=Math.min(1,p.a*1.6+0.08)*energy;
+        parts.push({x:xr,y:Math.pow(Math.random(),1.6)*top,vy:0.00015+Math.random()*0.0004,b:now,life:500+Math.random()*900,r:0.8+Math.random()*1.8}); } } }
+  g.save(); g.globalCompositeOperation="lighter";
+  for(let i=parts.length-1;i>=0;i--){ const p=parts[i], age=now-p.b; if(age>p.life){ parts.splice(i,1); continue; }
+    p.y+=p.vy*16; const a=Math.sin(Math.PI*age/p.life)*0.75, hue=Math.max(0,Math.min(195,p.x*230-25));
+    g.fillStyle=`hsla(${hue},95%,58%,${a})`; g.beginPath(); g.arc(padL+p.x*W,H-Math.min(1,p.y)*H*0.92,p.r,0,7); g.fill(); }
+  g.restore();
+  // curva del filtro
+  if(curveCfg){ g.strokeStyle="#ff6a3d"; g.lineWidth=2.5; g.shadowColor="rgba(255,106,61,.55)"; g.shadowBlur=10; g.beginPath();
+    for(let x=0;x<=W;x+=2){ const f=FMIN*Math.exp(x/W*LFR), v=filtH(f,curveCfg), y=H-2*Math.tanh(v/2)/2*H; x?g.lineTo(padL+x,y):g.moveTo(padL+x,y); } g.stroke(); g.shadowBlur=0;
+    const dot=(f)=>{ const x=padL+fx(f,W), y=H-2*Math.tanh(filtH(f,curveCfg)/2)/2*H; g.fillStyle="#c8c8cc"; g.beginPath(); g.arc(x,y,5,0,7); g.fill(); g.strokeStyle="#1a1a1c"; g.lineWidth=1.5; g.stroke(); };
+    dot(curveCfg.lp); if(curveCfg.hpOn) dot(curveCfg.hp); }
+  return parts.length; }
+function kbdHtml(){ const lo=36, hi=84, whites=[]; for(let n=lo;n<=hi;n++) if(![1,3,6,8,10].includes(n%12)) whites.push(n);
+  const ww=100/whites.length; let blacks=""; whites.forEach((n,i)=>{ if([0,2,5,7,9].includes(n%12)&&n+1<=hi) blacks+=`<i class="kb${STG.notes.has(n+1)?" on":""}" data-key="${n+1}" style="left:${(i+1)*ww-ww*0.3}%;width:${ww*0.6}%"></i>`; });
+  return `<div class="kbd">${whites.map(n=>`<b class="kw${STG.notes.has(n)?" on":""}" data-key="${n}">${n%12===0?`<small>C${n/12-1}</small>`:""}</b>`).join("")}${blacks}</div>`; }
+function stageHtml(){
+  const s=state.curProg!=null&&Date.now()-(state.curProgT||0)<36e5?state.curProg:state.sel, d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
+  return `<section class="stage" id="stage"><div class="cheek"></div><div class="sface">
+   <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><span class="sled" id="stLed"></span></div>
+   <div class="sbox sspec"><div class="slab"><span>Sonido en vivo · frecuencias</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
+   <div class="sbox sscope"><div class="slab"><span>Onda</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
+   <div class="sbox senv"><div class="slab"><span>Envolventes</span><b><i class="kf"></i>Filtro <i class="ka"></i>Volumen</b></div><canvas id="cvEnv"></canvas></div>
+   <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button></div>
+  </div><div class="cheek"></div></section>`; }
+function wireStage(){ document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ if(!await startMic()) return; } STG.src=v; if(v==="sim"&&STG.audio){ /* se deja abierto para volver rápido */ } render(); }); kickStage(); }
+async function startMic(){ try{ const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  const ac=new (window.AudioContext||window.webkitAudioContext)(), src=ac.createMediaStreamSource(st), an=ac.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0.6; src.connect(an);
+  STG.audio={ac,an,buf:new Float32Array(an.fftSize),fb:new Float32Array(an.frequencyBinCount)}; toast("Escuchando la entrada de audio. Conecta la salida del Prophet a tu interfaz."); return true; }
+  catch(e){ toast("No pude abrir la entrada de audio: permite el micrófono/interfaz en el navegador."); return false; } }
+function autoPitch(buf,sr){ let best=-1,bc=0; const N=buf.length/2; let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i]; if(Math.sqrt(rms/N)<0.01) return null;
+  for(let lag=Math.floor(sr/2000);lag<Math.floor(sr/30);lag++){ let c=0; for(let i=0;i<N;i++) c+=buf[i]*buf[i+lag]; if(c>bc){bc=c;best=lag;} } return best>0?sr/best:null; }
+function fitCanvas(cv){ if(!cv) return null; const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1; if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){ cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); } const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); return {g,w:r.width,h:r.height}; }
+function grid(g,w,h){ g.clearRect(0,0,w,h); g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1; for(let x=0;x<=w;x+=w/8){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); } for(let y=0;y<=h;y+=h/4){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } }
+function kickStage(){ if(!STG.raf) STG.raf=requestAnimationFrame(drawStage); }
+function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if(!sc||document.hidden) return; const now=performance.now(), d=stageData();
+  const A=fitCanvas(sc), B=fitCanvas(document.getElementById("cvSpec")), C=fitCanvas(document.getElementById("cvEnv")); let busy=false;
+  const led=document.getElementById("stLed");
+  if(STG.src==="mic"&&STG.audio){ const {an,buf,fb,ac}=STG.audio; an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(fb);
+    let z=0; for(let i=1;i<buf.length/2;i++){ if(buf[i-1]<0&&buf[i]>=0){ z=i; break; } }
+    grid(A.g,A.w,A.h); A.g.strokeStyle="#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.6)"; A.g.shadowBlur=8; A.g.beginPath(); const n=Math.min(1024,buf.length-z); for(let i=0;i<n;i++){ const x=i/n*A.w, y=A.h/2-buf[z+i]*A.h*0.45; i?A.g.lineTo(x,y):A.g.moveTo(x,y); } A.g.stroke(); A.g.shadowBlur=0;
+    const hz=autoPitch(buf,ac.sampleRate); document.getElementById("stHz").textContent=hz?`${hz.toFixed(1)} Hz · ${noteNm(Math.round(69+12*Math.log2(hz/440)))}`:"Sin señal";
+    const sr=ac.sampleRate, sp=[]; for(let i=0;i<140;i++){ const f=FMIN*Math.exp(i/140*LFR), bi=Math.round(f/(sr/2)*fb.length), db=fb[bi]??-140, v=Math.max(0,(db+95)/75); if(v>0.02) sp.push({f,a:v*0.35}); }
+    const dd=stageData(); drawChroma(B,sp,dd?filtCfg(dd,0.6):null,1);
+    document.getElementById("stCut").textContent="Audio real · 20 Hz – 20 kHz"; if(led) led.classList.toggle("on",!!hz); busy=true; }
+  else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69)/12), amp=ce.amp==null?0.85:ce.amp;
+    const {y,cutHz}=simSignal(d,f0,ce.fil==null?0.6:ce.fil);
+    grid(A.g,A.w,A.h); A.g.strokeStyle=ce.amp==null?"rgba(255,106,61,.55)":"#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.7)"; A.g.shadowBlur=ce.amp==null?0:10;
+    A.g.beginPath(); const N=y.length*0.625|0; for(let i=0;i<N;i++){ const x=i/N*A.w, yy=A.h/2-y[i]*amp*A.h*0.42; i?A.g.lineTo(x,yy):A.g.moveTo(x,yy); } A.g.stroke(); A.g.shadowBlur=0;
+    document.getElementById("stHz").textContent=ce.amp==null?"Toca una tecla del Prophet":`${noteNm(n)} · ${f0.toFixed(1)} Hz`;
+    const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*Math.min(2,filtH(p.f,cfg))/2}));
+    if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
+    const left=drawChroma(B,spf,cfg,ce.amp==null?0.18:ce.amp);
+    document.getElementById("stCut").textContent=`Filtro ≈ ${cutHz<1000?Math.round(cutHz)+" Hz":(cutHz/1000).toFixed(1)+" kHz"}`;
+    // envolventes
+    grid(C.g,C.w,C.h); const drawEnv=(e,col,lvl,k)=>{ const tot=envT(e.a)+envT(e.d)+envT(e.r)+0.0001, sus=0.25, W=C.w, H=C.h-6;
+      const sx=t=>Math.log10(1+t*1000)/Math.log10(1+tot*1000)*(W*0.75), xa=sx(envT(e.a)), xd=sx(envT(e.a)+envT(e.d)), xs=xd+W*sus*0.0+ (W*0.75-xd)*0, xr=W, sl=H-(e.s/127)*(H-4);
+      const xsEnd=Math.max(xd+20,W*0.72);
+      C.g.strokeStyle=col; C.g.lineWidth=2; C.g.beginPath(); C.g.moveTo(0,H); C.g.lineTo(Math.max(xa,2),4); C.g.lineTo(Math.max(xd,xa+2),sl); C.g.lineTo(xsEnd,sl); C.g.lineTo(xr,H); C.g.stroke();
+      C.g.fillStyle=col.replace(")",",.12)").replace("rgb","rgba"); C.g.lineTo(0,H); C.g.fill();
+      if(lvl!=null&&k){ let px; const t=(now-k.on)/1000; if(k.off==null){ px=t<envT(e.a)?(t/envT(e.a))*xa: t<envT(e.a)+envT(e.d)?xa+(t-envT(e.a))/envT(e.d)*(xd-xa): xd+Math.min(1,(t-envT(e.a)-envT(e.d))/1.5)*(xsEnd-xd); }
+        else { const tr=(now-k.off)/1000; px=xsEnd+Math.min(1,tr/envT(e.r))*(xr-xsEnd); }
+        const py=H-lvl*(H-4); C.g.fillStyle="#fff"; C.g.beginPath(); C.g.arc(px,py,4.5,0,7); C.g.fill(); C.g.strokeStyle=col; C.g.lineWidth=2; C.g.stroke(); } };
+    drawEnv(filE(d),"rgb(232,176,74)",ce.fil,ce.k); drawEnv(ampE(d),"rgb(108,206,160)",ce.amp,ce.k);
+    if(led) led.classList.toggle("on",ce.amp!=null&&STG.notes.size>0); busy=STG.notes.size>0||left>0; }
+  if(busy||STG.src==="mic") STG.raf=requestAnimationFrame(drawStage); }
+function stageHead(){ const el=document.getElementById("stNum")||{}; const s=state.curProg!=null&&Date.now()-(state.curProgT||0)<36e5?state.curProg:state.sel; const d=stageData();
+  el.textContent=s!=null?slotLabel(s):"---"; const hn=document.getElementById("hlNum"); if(hn&&!document.getElementById("stNum")){ /* nada */ } if(hn){ hn.textContent=s!=null?slotLabel(s):"---"; document.getElementById("hlName").textContent=s!=null?(dispName(s)||""):"Prophet 6"; document.getElementById("hlBpm").textContent=d?pv(d,P.bpm):"—"; } const a=document.getElementById("stName"), b2=document.getElementById("stSub"); if(a) a.textContent=s!=null?(dispName(s)||""):d?getName(d):"—"; if(b2) b2.textContent=d?waveLabel(d):""; kickStage(); }
+function stagePoll(){ clearTimeout(STG.pt); const go=state.view==="all"&&document.getElementById("stage")&&state.out&&!state.busy&&!state.waiter&&!state.wiz&&!document.hidden;
+  if(go){ state.quietEdit=true; readEdit().then(r=>{ if(r){ STG.edAt=Date.now(); const sub=document.getElementById("stSub"); if(sub) sub.textContent=waveLabel(r.data); kickStage(); } }).finally(()=>{ state.quietEdit=false; }); }
+  STG.pt=setTimeout(stagePoll,go?700:1200); }
 /* ================= MODO SEGURO ================= */
 function curMode(){ return !state.safe?"editar":state.allowPC?"escuchar":"ver"; }
 async function setMode(m){
@@ -1824,7 +2101,7 @@ function init(){
     if(state.view==="all"&&state.stepTo&&(e.key==="ArrowDown"||e.key==="ArrowUp")){ state.stepTo(e.key==="ArrowDown"?1:-1); e.preventDefault(); return; }
     if(e.key==="ArrowDown"&&s<999){select(s+1);e.preventDefault();} if(e.key==="ArrowUp"&&s>0){select(s-1);e.preventDefault();}
     if(e.key===" "){audition(s);e.preventDefault();} if(e.key==="p"||e.key==="P") state.view==="panel"?setView(state.prevView):openPanel(s); });
-  normalizeMap(); setView("all"); renderStats(); livePoll();
+  normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll();
   log("Listo. Pulsa Conectar (Chrome pedirá permiso para MIDI con SysEx).");
 }
 load().then(init);

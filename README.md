@@ -1,4 +1,4 @@
-# Prophet-6 Librarian
+# Prophet 6
 
 App web para el Sequential Prophet‑6: biblioteca de presets (lectura por SysEx), clasificación, origen de packs (GEOSynths, Luftrum 15, fábrica), panel, mapa MIDI, recetas, globales y tempo por preset.
 

@@ -4,7 +4,7 @@ src=open(sys.argv[1]).read()
 head='''<link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#17181A">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Prophet-6">
+<meta name="apple-mobile-web-app-title" content="Prophet 6">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
 <script>if("serviceWorker" in navigator&&location.protocol==="https:") navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
