@@ -1545,7 +1545,7 @@ const GUIDES=[
    "Pulsa <b>GLOBALS</b> una vez → LED rojo = fila superior (Transpose, Master Tune, MIDI Channel, MIDI Clock, Clock Port, Param Xmit, Param Rcv, MIDI Control, MIDI SysEx, MIDI Out). Dos veces → LED amarillo = fila inferior (Local Ctrl, Seq Jack, Pot Mode, Sustain +/-, Alt Tuning, Vel Response, AT Response, Stereo/Mono, Pgm Dump).",
    "Pulsa el botón de programa <b>0–9</b> que tiene impreso encima el parámetro que quieres.",
    "Usa <b>BANK</b> (bajar) y <b>TENS</b> (subir) para cambiar el valor en el display.",
-   "Pulsa <b>GLOBALS</b> otra vez para salir. El ajuste queda guardado."],
+   "Pulsa <b>GLOBALS</b> dos veces para salir (la primera pasa al LED amarillo). El ajuste queda guardado."],
   note:"Abajo, en «Configuración global», cada tarjeta indica en qué botón está ese ajuste en el equipo."},
  {t:"3 · Hacer un respaldo completo (antes de tocar nada)",lvl:"Seguridad",steps:[
    "Lee los 1000 programas: <b>Todo (0–999)</b>. Tarda 1–2 minutos.",
@@ -1595,13 +1595,13 @@ function renderManual(){
     return `<div class="gcard"><div class="gh"><b>${g.name}</b>${g.star?' <span class="note" title="Verifica el orden de opciones en la pantalla del Prophet">*</span>':""}${g.hw?` <span class="hwtag">${g.hw}</span>`:""}</div>
       <div class="note">${g.why}</div><div class="row">${ctrl}<button data-send="${i}" ${online?"":"disabled"}>Enviar</button><span class="ok" id="gok${i}"></span></div></div>`; }).join("");
   el.innerHTML=`<div class="man">
-    <div class="manhead"><h1>Manual de configuración</h1><p class="note">Guías cortas con botones que ejecutan cada paso. Abajo, la configuración global del Prophet-6 explicada en simple y con envío directo desde el Mac.</p></div>
+    <div class="manhead"><h1>Manual de configuración</h1><p class="note">Guías cortas con botones que ejecutan cada paso.</p></div>
     <div class="mancols"><div><h2>Guías paso a paso</h2>${guideHtml}</div>
-    <div><h2>Configuración global ${online?'<span class="led on"></span>':'<span class="note">(conecta para enviar)</span>'}</h2>
-      <div class="callout">Los cambios se envían por NRPN al instante y el Prophet los guarda. El equipo no permite leer estos valores de vuelta de forma fiable, así que la app muestra el último valor que <b>tú</b> enviaste. Las opciones marcadas con * pueden variar según el firmware: confirma en la pantalla del Prophet.</div>
-      
-      ${gl}</div></div></div>`;
-  el.querySelectorAll("button[data-g]").forEach(b=>b.onclick=()=>GUIDES[+b.dataset.g].act[+b.dataset.a][1]());
+    <div><h2>Configuración global del Prophet</h2>
+      <div class="callout">Los ajustes globales ahora están en un solo lugar: la pestaña <b>Globales</b>. Ahí la app lee lo que tiene tu Prophet, te marca con ✓ o ✗ lo que esta app necesita y te dice qué botón apretar en el equipo.</div>
+      <div class="row"><button class="pri" id="manGoGlobals">Ir a Globales →</button></div>
+      ${recHtml()}</div></div></div>`;
+  el.querySelectorAll("button[data-g]").forEach(b=>b.onclick=()=>GUIDES[+b.dataset.g].act[+b.dataset.a][1]()); const mg=$("#manGoGlobals"); if(mg) mg.onclick=()=>{ setView("globals"); if(state.out) readGlobals().then(()=>renderGlobalsPage()); };
   el.querySelectorAll("input[type=range][data-gi]").forEach(r=>r.oninput=()=>{ const g=GLOBALS[+r.dataset.gi]; $("#gv"+r.dataset.gi).textContent=g.fmt(+r.value)+" (sin enviar)"; });
   el.querySelectorAll("button[data-send]").forEach(b=>b.onclick=()=>{ const i=+b.dataset.send, g=GLOBALS[i]; const c=el.querySelector(`[data-gi="${i}"]`); if(c.value==="") return toast("Elige un valor primero.");
     sendGlobal(g,+c.value); $("#gok"+i).textContent="✔ enviado"; if(g.range) $("#gv"+i).textContent=g.fmt(+c.value); });
