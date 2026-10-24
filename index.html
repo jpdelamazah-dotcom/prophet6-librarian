@@ -759,6 +759,8 @@ body.stagefull{overflow:hidden}
 .kbars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:90px;align-items:end}.kbar{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px}.kbar i{display:block;width:70%;background:linear-gradient(#ff6a3d,#ffd60a);border-radius:3px;min-height:2px}.kbar span{font-size:10px;color:#9b9ba1}
 
 .recbanner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#16301f;border:1px solid #2f6b42;border-radius:14px;padding:12px 16px;margin:0 auto 14px;max-width:1500px}.recbanner>div{flex:1;min-width:240px;display:flex;flex-direction:column;gap:3px}.recbanner b{font-size:15px;color:#d8f5e0}
+
+.fpsvg{width:100%;max-width:520px;display:block}.fpchips{display:flex;flex-wrap:wrap;gap:6px}.fpchips span{background:#26272c;border-radius:8px;padding:4px 8px;font-size:12px;color:#c9c9cd}.fpchips b{color:#fff}
 </style>
 </head>
 <body>
@@ -1513,12 +1515,13 @@ function renderPanel(){
   const greyDeco=(label,sub)=>`<div class="gbtnw deco"><div class="gbtn"></div><label>${label}${sub?"<br>"+sub:""}</label></div>`;
   const fxBtn=()=>`<div class="sw fxsel" id="fxSel" title="Elegir efecto A o B (solo cambia la vista)"><div class="duo"><span class="led2${FXV==="A"?" on":""}">A</span><span class="led2${FXV==="B"?" on":""}">B</span></div><div class="btn"></div><label>Effect</label></div>`;
   document.querySelectorAll("#grid #stage").forEach(e=>e.remove());
-  const rb=state.recipeLoaded&&state.panelSrc==="edit"?`<div class="recbanner"><div><b>Receta «${esc(state.recipeLoaded.nombre)}» cargada: tócala en el Prophet</b><span class="note">Está en la memoria de edición del Prophet (como un sonido sin guardar). Si cambias de programa se pierde, a menos que la guardes.</span></div><button class="pri" id="rbSave">Guardar como preset…</button><button id="rbBack">Volver a Recetas</button><button id="rbX" title="Cerrar aviso">✕</button></div>`:"";
+  const rb=state.recipeLoaded&&state.panelSrc==="edit"?`<div class="recbanner"><div><b>Receta «${esc(state.recipeLoaded.nombre)}» cargada: tócala en el Prophet</b><span class="note">Está en la memoria de edición del Prophet (como un sonido sin guardar). Si cambias de programa se pierde, a menos que la guardes.</span></div><button id="rbCmp" ${TGT.fp?"":"title=\"Primero escucha la canción en Recetas\""}>Comparar con la canción</button><button class="pri" id="rbSave">Guardar como preset…</button><button id="rbBack">Volver a Recetas</button><button id="rbX" title="Cerrar aviso">✕</button></div>`:"";
   el.innerHTML=`${rb}${stageHtml()}<div class="p6">${head}${wizBar()}${abs()}${kbdHtml()}
   <div class="hidden-params">${sec("SIN CONTROL PROPIO EN EL PANEL (se ajustan vía menús)",SL("Glide Mode","glideMode",L.glideMode)+SL("Unison Voces","uniMode",L.uniMode)+K("Seq Steps","seqLen",63,{sm:1,fmt:x=>x+1}))}</div>
   <div class="p6foot">${state.safe?"Para mover perillas desde aquí, elige el modo «Editar» (arriba a la derecha).":state.out?"<b>Editable:</b> arrastra las perillas ↕ (Shift = fino) o usa la rueda; clic en botones y displays. Cada cambio se envía al Prophet por NRPN (requiere GLOBALS → Param Receive = NRPN). Para conservarlo: <b>Guardar en slot…</b>":"Conecta el Prophet para editar desde el Mac."}
    · Arco ámbar = valor; bipolares: ámbar positivo, azul negativo.</div></div>`;
   wirePanel(); wireStage();
+  const rbc=document.getElementById("rbCmp"); if(rbc) rbc.onclick=compareWithSong;
   const rbs=document.getElementById("rbSave"); if(rbs){ rbs.onclick=()=>saveRecipeAsPreset(state.recipeLoaded); document.getElementById("rbBack").onclick=()=>setView("recipe"); document.getElementById("rbX").onclick=()=>{ state.recipeLoaded=null; renderPanel(); }; }
 }
 function fitPanel(){ const p=document.querySelector("#panel .p6"); if(!p) return; p.style.zoom=1; const avail=$("#panelWrap").clientWidth-30; const w=p.scrollWidth; p.style.zoom=Math.max(.55,Math.min(1.15,avail/w)).toFixed(3); }
@@ -1838,7 +1841,7 @@ Responde SOLO con JSON válido, sin texto fuera del JSON, con esta forma:
 {"analisis":"2-4 frases sobre el tema y sus sonidos","recetas":[{"nombre":"máx 20 caracteres ASCII","para":"canción/parte","descripcion":"qué suena y por qué esos ajustes","como_tocar":"consejos de interpretación","parametros":{...}}]}
 Incluye en "parametros" TODOS estos parámetros (valores enteros dentro del rango):
 ${recipeSchemaText()}
-Notas: oscFreq 24 = Do2 (semitonos). osc shape: 0 triangular, 127 sierra, 254 pulso. lpFreq 0-164 (≈ 20 Hz a 20 kHz exponencial). Envolventes 0-127 (0 ≈ 2 ms, 64 ≈ 0.2 s, 127 ≈ 20 s). lfoFreq 0-254 (150 ≈ 5 Hz). lfoShape 0 Tri,1 Saw,2 RevSaw,3 Square,4 Random. Efecto A (fxASel 0-9): 0 off,1 BBD delay,2 delay digital,3 chorus,4-6 phaser,7 ring mod,8-9 flanger. Efecto B (fxBSel 0-13): lo mismo + 10 hall,11 room,12 plate,13 spring. uniOn 1 = unison (uniMode 0 = 1 voz, mono). keyMode 0-5. Si el instrumento original es acústico, haz la mejor aproximación analógica y dilo. Máximo 3 recetas.`; }
+Notas: oscFreq 24 = Do2 (semitonos). osc shape: 0 triangular, 127 sierra, 254 pulso. lpFreq 0-164 (≈ 20 Hz a 20 kHz exponencial). Envolventes 0-127 (0 ≈ 2 ms, 64 ≈ 0.2 s, 127 ≈ 20 s). lfoFreq 0-254 (150 ≈ 5 Hz). lfoShape 0 Tri,1 Saw,2 RevSaw,3 Square,4 Random. Efecto A (fxASel 0-9): 0 off,1 BBD delay,2 delay digital,3 chorus,4-6 phaser,7 ring mod,8-9 flanger. Efecto B (fxBSel 0-13): lo mismo + 10 hall,11 room,12 plate,13 spring. uniOn 1 = unison (uniMode 0 = 1 voz, mono). keyMode 0-5. Si el instrumento original es acústico, haz la mejor aproximación analógica y dilo. No inventes datos de la canción que no sepas: si recibes una huella de audio, básate en ella. Máximo 3 recetas.`; }
 async function imgToB64(file){ const url=URL.createObjectURL(file); const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
   const sc=Math.min(1,1400/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
   return c.toDataURL("image/jpeg",0.85).split(",")[1]; }
@@ -1850,6 +1853,8 @@ async function askClaude(text,imgB64){ if(!AI.key) throw new Error("NOKEY");
   return JSON.parse(m[0]); }
 function aiCardHtml(){ return `<div class="aibox"><div class="aihead"><b>Pídele un sonido a Claude</b><span class="note">${AI.key?`Conectado · ${esc(AI.model)}`:`<a href="#" id="aiGoSet">Conecta Claude en Ajustes</a> para usarlo aquí`}</span></div>
    <div class="aidrop" id="aiDrop" tabindex="0">${STG.aiImg?`<img src="data:image/jpeg;base64,${STG.aiImg}" alt="Imagen para Claude"><button id="aiImgX" title="Quitar imagen">✕</button>`:`<span>Pega aquí una captura (⌘V), arrástrala o <u>elige un archivo</u></span>`}<input type="file" id="aiFile" accept="image/*" hidden></div>
+   <div class="row"><button id="aiListen">🎧 Escuchar la canción (10 s)</button><span class="note" id="aiLSt">${TGT.fp?"✓ Huella de la canción lista: Claude la usará.":"Pon la canción en los parlantes, en la parte que quieres imitar, y pulsa aquí."}</span></div>
+   ${TGT.fp?fpSvg(TGT.fp,null)+fpChips(TGT.fp):""}
    <textarea id="aiTxt" rows="2" placeholder="Ej: el pad del comienzo, o «Spring 2 de Max Richter, los violines»">${esc(STG.aiTxt||"")}</textarea>
    <div class="row"><button class="pri" id="aiGo" ${AI.key?"":"disabled"}>Crear receta con Claude</button><span class="note" id="aiStat"></span></div></div>`; }
 function wireAi(onDone){ const drop=$("#aiDrop"), fi=$("#aiFile"); if(!drop) return;
@@ -1859,11 +1864,58 @@ function wireAi(onDone){ const drop=$("#aiDrop"), fi=$("#aiFile"); if(!drop) ret
   const x=$("#aiImgX"); if(x) x.onclick=e=>{ e.stopPropagation(); STG.aiImg=null; onDone(); };
   const gs=$("#aiGoSet"); if(gs) gs.onclick=e=>{ e.preventDefault(); setView("settings"); };
   $("#aiTxt").oninput=e=>{ STG.aiTxt=e.target.value; };
+  $("#aiListen").onclick=async()=>{ const st=$("#aiLSt"); const fp=await captureFP(10,"cancion",p=>{ st.textContent=`Escuchando… ${Math.round(p*100)}%`; }); if(fp){ TGT.fp=fp; TGT.hist=[]; TGT.cur=null; onDone(); } };
   $("#aiGo").onclick=async()=>{ const st=$("#aiStat"), b=$("#aiGo"); b.disabled=true; st.textContent="Claude está escuchando… (unos 20-40 s)";
-    try{ const j=await askClaude(STG.aiTxt,STG.aiImg); const list=(j.recetas||[]).map(r=>({nombre:String(r.nombre||"Receta").replace(/[^\x20-\x7d]/g,"").slice(0,20),para:r.para||"",descripcion:[r.descripcion,r.como_tocar?("Cómo tocarlo: "+r.como_tocar):""].filter(Boolean).join(" "),parametros:r.parametros||{},t:Date.now()}));
+    try{ TGT.req=STG.aiTxt; const j=await askClaude((STG.aiTxt||"Crea la receta del sonido de fondo.")+(TGT.fp?`
+Huella de audio medida con micrófono mientras sonaba la canción (úsala como referencia principal: color del espectro, brillo, graves/medios/agudos, pulso y tonalidad reales): ${JSON.stringify(TGT.fp)}`:""),STG.aiImg); const list=(j.recetas||[]).map(r=>({nombre:String(r.nombre||"Receta").replace(/[^\x20-\x7d]/g,"").slice(0,20),para:r.para||"",descripcion:[r.descripcion,r.como_tocar?("Cómo tocarlo: "+r.como_tocar):""].filter(Boolean).join(" "),parametros:r.parametros||{},t:Date.now()}));
       if(!list.length) throw new Error("No vino ninguna receta."); const all=myRecipes().concat(list); saveMyRecipes(all); state.aiLast={analisis:j.analisis,n:list.length}; STG.aiImg=null; STG.aiTxt=""; onDone(); toast(`Claude creó ${list.length} receta(s). Elige una arriba para cargarla.`); }
     catch(e){ st.textContent=e.message==="NOKEY"?"Falta conectar Claude en Ajustes.":/401|invalid x-api-key|authentication/i.test(e.message)?"La clave de API no es válida.":/Failed to fetch/i.test(e.message)?"Sin conexión a internet o bloqueado por el navegador.":"Error: "+e.message; b.disabled=false; } }; }
 document.addEventListener("paste",async e=>{ if(state.view!=="recipe") return; const it=[...(e.clipboardData||{}).items||[]].find(i=>i.type&&i.type.startsWith("image/")); if(!it) return; e.preventDefault(); STG.aiImg=await imgToB64(it.getAsFile()); renderRecipePage(); });
+/* ===== Escuchar la canción real y acercar el sonido (huella de audio + comparación) ===== */
+const TGT={fp:null,cur:null,hist:[]};
+async function captureFP(sec,label,onTick){ if(!STG.audio&&!await startMic()) return null; const {an,buf,ac}=STG.audio; const N=NB, acc=new Float64Array(N); let n=0; const rms=[], ch=new Float64Array(12); const t0=performance.now();
+  await new Promise(res=>{ const iv=setInterval(()=>{ an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(STG.audio.fb); let r=0; for(let i=buf.length-1024;i<buf.length;i++) r+=buf[i]*buf[i]; r=Math.sqrt(r/1024); rms.push(r);
+      const b=bandsNow(); for(let i=0;i<N;i++){ let lin=Math.pow(10,b[i]/10); if(MEM.noise) lin=Math.max(1e-12,lin-Math.pow(10,MEM.noise.bands[i]/10)); acc[i]+=lin; } n++;
+      const {fb}=STG.audio, bin=ac.sampleRate/2/fb.length; let e=0; const fr=new Float64Array(12); for(let k=Math.floor(60/bin);k<Math.min(fb.length,Math.floor(2200/bin));k++){ const db=fb[k]; if(db<-85) continue; const m=69+12*Math.log2(k*bin/440), mr=Math.round(m); if(Math.abs(m-mr)>0.3) continue; const w=Math.pow(10,db/20); fr[((mr%12)+12)%12]+=w; e+=w; } if(e>1e-4) for(let i=0;i<12;i++) ch[i]+=fr[i]/e;
+      const el=(performance.now()-t0)/1000; if(onTick) onTick(el/sec); if(el>=sec){ clearInterval(iv); res(); } },50); });
+  const db=Array.from(acc,v=>10*Math.log10(v/n+1e-12)); const mx=Math.max(...db); const shape=db.map(v=>+(v-mx).toFixed(1));
+  const lin=Array.from(acc), tot=lin.reduce((a,b)=>a+b,0)||1; let cen=0; lin.forEach((v,i)=>cen+=v*BF[i]); cen/=tot; let cum=0, roll=BF[NB-1]; for(let i=0;i<NB;i++){ cum+=lin[i]; if(cum>=tot*0.85){ roll=BF[i]; break; } }
+  const band=(lo,hi)=>lin.reduce((s,v,i)=>s+(BF[i]>=lo&&BF[i]<hi?v:0),0)/tot;
+  const mean=rms.reduce((a,b)=>a+b,0)/rms.length, sd=Math.sqrt(rms.reduce((a,b)=>a+(b-mean)*(b-mean),0)/rms.length);
+  const env=rms.map((v,i)=>i?Math.max(0,v-rms[i-1]):0); let ons=0; const thr=mean*0.25; for(let i=1;i<env.length;i++) if(env[i]>thr&&env[i-1]<=thr) ons++;
+  let bpm=null,bc=0; for(let lag=Math.round(60/180/0.05);lag<=Math.round(60/50/0.05);lag++){ let c=0; for(let i=lag;i<env.length;i++) c+=env[i]*env[i-lag]; if(c>bc){ bc=c; bpm=60/(lag*0.05); } }
+  const rk=keyRank(Array.from(ch))[0];
+  return {etiqueta:label,segundos:sec,espectro_db_48bandas_30Hz_16kHz:shape,centroide_hz:Math.round(cen),rolloff85_hz:Math.round(roll),energia_graves_lt250:+band(0,250).toFixed(2),energia_medios_250_2k:+band(250,2000).toFixed(2),energia_agudos_gt2k:+band(2000,99999).toFixed(2),dinamica_variacion:+(sd/(mean||1)).toFixed(2),ataques_por_segundo:+(ons/sec).toFixed(2),bpm_estimado:bpm?Math.round(bpm):null,tonalidad:PC_ES[rk.t]+" "+rk.mode,nivel_rms:+mean.toFixed(4)}; }
+function fpDistance(a,b){ if(!a||!b) return null; let e=0,n=0; for(let i=0;i<NB;i++){ const x=Math.max(-50,a.espectro_db_48bandas_30Hz_16kHz[i]), y=Math.max(-50,b.espectro_db_48bandas_30Hz_16kHz[i]); if(x<-49&&y<-49) continue; e+=(x-y)*(x-y); n++; } return n?Math.sqrt(e/n):null; }
+function fpSvg(a,b){ const X=i=>10+i/(NB-1)*380, Y=v=>110-(Math.max(-50,v)+50)/50*100; const line=(fp,col,dash)=>fp?`<path d="${pth(fp.espectro_db_48bandas_30Hz_16kHz.map((v,i)=>[X(i),Y(v)]))}" stroke="${col}" stroke-width="2.4" fill="none" ${dash?'stroke-dasharray="5 4"':""}/>`:"";
+  return `<svg viewBox="0 0 400 130" class="fpsvg"><rect x="10" y="10" width="380" height="100" fill="#0e0f12"/>${[100,1000,10000].map(f=>{ const i=Math.log(f/30)/Math.log(16000/30)*(NB-1); return `<line x1="${X(i)}" y1="10" x2="${X(i)}" y2="110" stroke="rgba(255,255,255,.08)"/><text x="${X(i)}" y="124" text-anchor="middle" font-size="9" fill="#8e8e93">${f>=1000?f/1000+"k":f} Hz</text>`; }).join("")}${line(a,"#30d158")}${line(b,"#ff6a3d",true)}</svg>`; }
+function fpChips(fp){ return fp?`<div class="fpchips"><span>Tono: <b>${fp.tonalidad}</b></span><span>Brillo: <b>${fp.centroide_hz} Hz</b></span><span>Graves/medios/agudos: <b>${Math.round(fp.energia_graves_lt250*100)}/${Math.round(fp.energia_medios_250_2k*100)}/${Math.round(fp.energia_agudos_gt2k*100)}%</b></span><span>Pulso: <b>${fp.bpm_estimado||"?"} BPM</b></span><span>Ataques/s: <b>${fp.ataques_por_segundo}</b></span></div>`:""; }
+async function compareWithSong(){ if(!TGT.fp) return toast("Primero, en Recetas, pulsa «Escuchar la canción».");
+  let d=document.getElementById("cmpDlg"); if(!d){ d=document.createElement("dialog"); d.id="cmpDlg"; d.className="memdlg"; document.body.appendChild(d); }
+  const draw=(msg)=>{ const dist=fpDistance(TGT.fp,TGT.cur); d.innerHTML=`<div class="memhead"><h3>¿Se parece a la canción?</h3><button id="cmX">✕</button></div><div class="keybody">
+     <p class="note">${msg||"Verde = la canción · naranjo punteado = tu Prophet ahora."}</p>${fpSvg(TGT.fp,TGT.cur)}
+     ${dist!=null?`<div class="kres"><div><small>Diferencia de color (espectro)</small><b>${dist.toFixed(1)} dB</b><span class="note">${dist<6?"Muy parecido":dist<10?"Cerca: faltan detalles":"Todavía lejos"} ${TGT.hist.length>1?"· antes: "+TGT.hist.slice(0,-1).map(x=>x.toFixed(1)).join(" → "):""}</span></div></div>`:""}
+     <div class="row"><span class="note">Canción:</span>${fpChips(TGT.fp)}</div>${TGT.cur?`<div class="row"><span class="note">Prophet:</span>${fpChips(TGT.cur)}</div>`:""}
+     <div class="row"><button id="cmRec">Escuchar mi Prophet (3 s)</button><button class="pri" id="cmFix" ${TGT.cur&&AI.key?"":"disabled"}>Pedir a Claude que lo acerque</button><span class="note" id="cmSt"></span></div>
+     <p class="note">Pausa la canción antes de escuchar tu Prophet: la app tocará un acorde de la tonalidad detectada y lo grabará por el micrófono.</p></div>`;
+    d.querySelector("#cmX").onclick=()=>d.close(); d.querySelector("#cmRec").onclick=recProphet; d.querySelector("#cmFix").onclick=fixWithClaude; };
+  const recProphet=async()=>{ if(state.safe){ await setMode("escuchar"); } const st=d.querySelector("#cmSt"); st.textContent="Escuchando tu Prophet…"; const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1;
+    const tk=TGT.fp.tonalidad.split(" "), t=PC_ES.indexOf(tk[0]), minor=tk[1]==="menor"; const notes=[48+t,48+t+(minor?3:4),48+t+7];
+    state.previewing=true; notes.forEach(n=>{ send([0x90|ch,n,90]); stageNote(n,90,true); }); const p=captureFP(3,"prophet"); setTimeout(()=>{ notes.forEach(n=>{ send([0x80|ch,n,0]); stageNote(n,0,true); }); state.previewing=false; },2600);
+    TGT.cur=await p; const dist=fpDistance(TGT.fp,TGT.cur); if(dist!=null) TGT.hist.push(dist); draw(); };
+  const fixWithClaude=async()=>{ const st=d.querySelector("#cmSt"), b=d.querySelector("#cmFix"); b.disabled=true; st.textContent="Claude está ajustando… (20-40 s)";
+    try{ const cur=await readEdit(); const params={}; if(cur) for(const k of Object.keys(RANGE)) if(mapped(P[k])&&k!=="seqOn"&&k!=="seqLen") params[k]=pv(cur.data,P[k]);
+      const j=await askClaude(`Ajusta este sonido del Prophet-6 para que se parezca más a la canción. Compara las dos huellas de audio medidas con micrófono y cambia los parámetros necesarios (brillo/filtro, mezcla de osciladores, envolventes, efectos). Devuelve UNA receta con TODOS los parámetros.
+Huella de la canción: ${JSON.stringify(TGT.fp)}
+Huella del Prophet ahora (tocando un acorde de la tonalidad): ${JSON.stringify(TGT.cur)}
+Parámetros actuales: ${JSON.stringify(params)}
+Pedido original: ${STG.aiTxt||TGT.req||""}`,null);
+      const r0=(j.recetas||[])[0]; if(!r0) throw new Error("Claude no devolvió una receta.");
+      const r=parseRecipe(JSON.stringify({nombre:String(r0.nombre||"Ajuste").replace(/[^\x20-\x7d]/g,"").slice(0,20),descripcion:r0.descripcion||"",parametros:r0.parametros||{}}));
+      const all=myRecipes(); all.push({nombre:r.nombre,para:"Ajuste por comparación",descripcion:(j.analisis||"")+" "+(r0.descripcion||""),parametros:r0.parametros,t:Date.now()}); saveMyRecipes(all);
+      st.textContent="Cargando el ajuste…"; await loadRecipe(r,false); d.showModal(); draw(`Claude: ${esc(j.analisis||"ajusté los parámetros")}. Ahora pulsa «Escuchar mi Prophet» para medir de nuevo.`); }
+    catch(e){ st.textContent="Error: "+e.message; b.disabled=false; } };
+  draw(); d.showModal(); }
 const CLAUDE_RECIPES=[
  {nombre:"Spring2 Cuerdas",para:"Max Richter · Spring 2",descripcion:"Ensamble de cuerdas suave para los acordes sostenidos: dos sierras levemente desafinadas (vibran como una sección de violines), filtro tibio que se abre un poco al entrar, ataque de arco lento y cola larga. Chorus para ensanchar y reverb de sala. Con aftertouch, más vibrato. Tócalo en acordes, en el registro medio, suave.",
   parametros:{osc1Freq:24,osc1Sync:0,osc1Shape:127,osc1PW:127,osc1Lvl:115,osc2Freq:24,osc2Fine:134,osc2Shape:127,osc2PW:127,osc2Lvl:105,osc2Low:0,osc2Key:1,subLvl:0,noise:6,slop:45,
@@ -2186,10 +2238,15 @@ function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
     const dest=[["Osc1",P.lfoF1],["Osc2",P.lfoF2],["PW",P.lfoPW],["Vol",P.lfoAmp],["LP",P.lfoLP],["HP",P.lfoHP]].filter(([,k])=>pv(d,k)).map(([n])=>n).join(" · ")||"sin destino";
     const lb=document.getElementById("stLfo"); if(lb) lb.textContent=`${LFO_SH[sh]} · ${hz<10?hz.toFixed(2):hz.toFixed(0)} Hz · ${dest}`; }
   const M=fitCanvas(document.getElementById("cvMix"));
-  if(M&&M.w>20){ const g=M.g; g.clearRect(0,0,M.w,M.h); const cut=Math.log(X.cfg.lp/20)/Math.log(1000);
-    const bars=[["OSC 1",pv(d,P.osc1Lvl)/127,"#ff6a3d"],["OSC 2",pv(d,P.osc2Lvl)/127,"#ff9f0a"],["SUB",pv(d,P.subLvl)/127,"#ffd60a"],["RUIDO",pv(d,P.noise)/127,"#bf5af2"],["CORTE",cut,"#5ac8fa"],["RESON.",pv(d,P.lpRes)/127,"#64d2ff"],["SALIDA",X.amp,"#30d158"]];
-    const bw=M.w/bars.length; g.font="9.5px 'IBM Plex Mono',monospace"; g.textAlign="center";
-    bars.forEach(([n,v,c],i)=>{ const x=i*bw+bw*0.25, w=bw*0.5, H=M.h-20; g.fillStyle="#141417"; g.fillRect(x,4,w,H); const h=H*Math.max(0,Math.min(1,v||0)); g.fillStyle=c; g.shadowColor=c; g.shadowBlur=8; g.fillRect(x,4+H-h,w,h); g.shadowBlur=0; g.fillStyle="#8e8e93"; g.fillText(n,i*bw+bw/2,M.h-4); }); g.textAlign="left"; }
+  if(M&&M.w>20){ const g=M.g; g.clearRect(0,0,M.w,M.h); const NH=16; let amps=new Array(NH).fill(0), f0=X.f0||0;
+    if(X.mic&&STG.audio){ const {fb,ac,buf}=STG.audio, bin=ac.sampleRate/2/fb.length; const hz=autoPitch(buf,ac.sampleRate); f0=hz||0; if(hz) for(let h=1;h<=NH;h++){ const f=hz*h; if(f>ac.sampleRate/2-100) break; let m=-140; for(let k=Math.floor(f*0.97/bin);k<=Math.ceil(f*1.03/bin);k++) m=Math.max(m,fb[k]??-140); amps[h-1]=Math.pow(10,m/20); } }
+    else if(X.spf&&f0){ for(const p of X.spf){ const h=Math.round(p.f/f0); if(h>=1&&h<=NH&&Math.abs(p.f/f0-h)<0.06) amps[h-1]+=p.a; } }
+    const ref=Math.max(...amps)||1, H=M.h-26, bw=M.w/NH; g.textAlign="center";
+    for(let h=1;h<=NH;h++){ const a=amps[h-1]/ref, db=a>0?20*Math.log10(a):-60, v=Math.max(0,(db+48)/48), x=(h-1)*bw+bw*0.15, w=bw*0.7, hh=H*v;
+      g.fillStyle="#141417"; g.fillRect(x,4,w,H); const col=h%2?"#ff9f0a":"#5ac8fa"; g.fillStyle=col; g.shadowColor=col; g.shadowBlur=v>0.05?8:0; g.fillRect(x,4+H-hh,w,hh); g.shadowBlur=0;
+      g.fillStyle="#8e8e93"; g.font="9.5px 'IBM Plex Mono',monospace"; g.fillText(String(h),x+w/2,M.h-12); if(f0&&(h===1||h===2||h===4||h===8)){ g.fillStyle="#5d5f66"; g.font="8px 'IBM Plex Mono',monospace"; g.fillText(noteNm(Math.round(69+12*Math.log2(f0*h/440))),x+w/2,M.h-2); } }
+    g.textAlign="left"; const odd=amps.filter((v,i)=>i%2===0).reduce((a,b)=>a+b,0), even=amps.filter((v,i)=>i%2===1).reduce((a,b)=>a+b,0), hi=amps.slice(5).reduce((a,b)=>a+b,0)/(amps.reduce((a,b)=>a+b,0)||1);
+    const lb=document.getElementById("stHarm"); if(lb) { const cnt=amps.filter(v=>v/ref>0.03).length; lb.textContent=!f0?"toca una nota":cnt<=2?"casi puro (oscuro)":(even<odd*0.25?"impares: hueco":"todos: lleno")+(hi>0.35?", brillante":""); } }
 }
 /* ===== Arquitectura del sonido: cómo fluye la señal y quién modula qué ===== */
 const FX_FULL={OFF:"Apagado",bbd:"Delay BBD (analógico)",ddL:"Delay digital",CHO:"Chorus",PH1:"Phaser 1",PH2:"Phaser 2",PH3:"Phaser 3",rin:"Ring mod",FL1:"Flanger 1",FL2:"Flanger 2",HAL:"Reverb Hall",rOO:"Reverb Room",PLA:"Reverb Plate",SPr:"Reverb Spring"};
@@ -2361,7 +2418,7 @@ function stageHtml(){
    ${STG.full?`<div class="sbox sgram"><div class="slab"><span>Historia del sonido · espectrograma</span><b>tiempo →</b></div><canvas id="cvGram"></canvas></div>
    <div class="sbox svoices"><div class="slab"><span>6 voces del Prophet</span><b>nivel por nota</b></div><canvas id="cvVoices"></canvas></div>
    <div class="sbox slfo"><div class="slab"><span>LFO</span><b id="stLfo"></b></div><canvas id="cvLfo"></canvas></div>
-   <div class="sbox smix"><div class="slab"><span>Mezcla y filtro</span><b>en vivo</b></div><canvas id="cvMix"></canvas></div>
+   <div class="sbox smix"><div class="slab"><span>Armónicos</span><b id="stHarm"></b></div><canvas id="cvMix"></canvas></div>
    <div class="skbd">${kbdHtml()}</div>
    <div class="sbox sat"><div class="slab"><span>Aftertouch · pitch bend · mod</span><b id="stAt"></b></div><canvas id="cvAT"></canvas></div>`:""}
   </div><div class="cheek"></div></section>`; }
@@ -2392,7 +2449,7 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     const hz=autoPitch(buf,ac.sampleRate); document.getElementById("stHz").textContent=hz?`${hz.toFixed(1)} Hz · ${noteNm(Math.round(69+12*Math.log2(hz/440)))}`:"Sin señal";
     const sr=ac.sampleRate, sp=[]; for(let i=0;i<140;i++){ const f=FMIN*Math.exp(i/140*LFR), bi=Math.round(f/(sr/2)*fb.length); let db=fb[bi]??-140; if(MEM.noise){ const nb=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); const nd=MEM.noise.bands[Math.max(0,Math.min(NB-1,nb))]; const lin=Math.pow(10,db/10)-Math.pow(10,(nd+3)/10); db=lin>0?10*Math.log10(lin):-140; } const v=Math.max(0,(db+95)/75); if(v>0.02) sp.push({f,a:v*0.35}); }
     const dd=stageData(); drawChroma(B,sp,dd?filtCfg(dd,0.6):null,1);
-    if(STG.full&&dd) drawExtras({d:dd,spf:sp,cfg:filtCfg(dd,0.6),ce:{},now,amp:Math.min(1,sp.reduce((m,p)=>Math.max(m,p.a*2.5),0)),energy:1});
+    if(STG.full&&dd) drawExtras({d:dd,mic:true,spf:sp,cfg:filtCfg(dd,0.6),ce:{},now,amp:Math.min(1,sp.reduce((m,p)=>Math.max(m,p.a*2.5),0)),energy:1});
     document.getElementById("stCut").textContent="Audio real · 20 Hz – 20 kHz"; if(led) led.classList.toggle("on",!!hz); busy=true; }
   else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69+pitchOff(pv(d,P.osc1Freq)))/12), amp=ce.amp==null?0.85:ce.amp;
     const {y,cutHz}=simSignal(d,f0,ce.fil==null?0.6:ce.fil);
@@ -2402,7 +2459,7 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
     if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
     const left=drawChroma(B,spf,cfg,ce.amp==null?0.18:ce.amp);
-    if(STG.full) drawExtras({d,spf,cfg,ce,now,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp}); else drawAT({d});
+    if(STG.full) drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp}); else drawAT({d});
     if((STG.at||0)>0.01) busy=true;
     document.getElementById("stCut").textContent=`Filtro ≈ ${cutHz<1000?Math.round(cutHz)+" Hz":(cutHz/1000).toFixed(1)+" kHz"}`;
     // envolventes
