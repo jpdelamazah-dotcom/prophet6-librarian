@@ -975,7 +975,7 @@ function onMsg(e){
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
@@ -1899,7 +1899,9 @@ const STG={notes:new Map(), last:null, src:"sim", audio:null, raf:0, edAt:0, pea
 const NOTE_N=["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 function noteNm(n){ return NOTE_N[n%12]+(Math.floor(n/12)-1); }
 function envT(v){ return 0.002*Math.pow(10000,v/127); }           // 0→2 ms … 127→20 s (aprox. Prophet‑6)
-function stageData(){ const fresh=state.editBuffer&&Date.now()-STG.edAt<6000; return fresh?state.editBuffer:(state.sel!=null?currentData(state.sel):state.editBuffer)||null; }
+function stageData(){ const fresh=state.editBuffer&&Date.now()-STG.edAt<6000, same=state.sel==null||state.curProg==null||state.sel===state.curProg; if(fresh&&same) return state.editBuffer; return (state.sel!=null?currentData(state.sel):state.editBuffer)||null; }
+function stageSlot(){ return state.sel!=null?state.sel:state.curProg; }
+function stageMismatch(){ return state.sel!=null&&state.curProg!=null&&state.sel!==state.curProg; }
 function envLevel(e,now){ // e={on,off,lvlOff}  devuelve 0..1
   const A=learnedEnvT("a",e.a),D=learnedEnvT("d",e.d),S=learnedSus(e.s),R=learnedEnvT("r",e.r);
   const at=(t)=>t<A?t/A:S+(1-S)*Math.exp(-(t-A)/(D/4));
@@ -2087,7 +2089,7 @@ function drawArch(force){ const el=document.getElementById("archSvg"); if(!el) r
   const sig=Array.from(d).join(",")+"|"+[...STG.notes.values()].filter(k=>k.off==null).length+"|"+Math.round((STG.at||0)*20); if(!force&&sig===STG.archSig) return; STG.archSig=sig; el.innerHTML=archSvg(d); }
 setInterval(()=>{ if(STG.arch&&!document.hidden) drawArch(false); },200);
 function stageHtml(){
-  const s=state.curProg!=null&&Date.now()-(state.curProgT||0)<36e5?state.curProg:state.sel, d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
+  const s=stageSlot(), d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
   const ins=STG.src==="mic"&&STG.inputs&&STG.inputs.length?`<select id="stIn" title="Entrada de audio">${STG.inputs.map(x=>`<option value="${esc(x.deviceId)}" ${x.deviceId===STG.inId||(!STG.inId&&x.deviceId==="default")?"selected":""}>${esc((x.label||"Entrada").replace(/\s*\(.*\)$/,""))}</option>`).join("")}</select>`:"";
   if(STG.arch) return `<section class="stage arch${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
    <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">Cómo fluye la señal y quién modula qué</span></div><span class="sled" id="stLed"></span></div>
@@ -2157,8 +2159,8 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     drawEnv(filE(d),"rgb(232,176,74)",ce.fil,ce.k); drawEnv(ampE(d),"rgb(108,206,160)",ce.amp,ce.k);
     if(led) led.classList.toggle("on",ce.amp!=null&&STG.notes.size>0); busy=busy||STG.notes.size>0||left>0||(STG.at||0)>0.01; }
   if(busy||STG.src==="mic"||STG.full) STG.raf=requestAnimationFrame(drawStage); }
-function stageHead(){ const el=document.getElementById("stNum")||{}; const s=state.curProg!=null&&Date.now()-(state.curProgT||0)<36e5?state.curProg:state.sel; const d=stageData();
-  el.textContent=s!=null?slotLabel(s):"---"; const hn=document.getElementById("hlNum"); if(hn&&!document.getElementById("stNum")){ /* nada */ } if(hn){ hn.textContent=s!=null?slotLabel(s):"---"; document.getElementById("hlName").textContent=s!=null?(dispName(s)||""):"Prophet 6"; document.getElementById("hlBpm").textContent=d?pv(d,P.bpm):"—"; } const a=document.getElementById("stName"), b2=document.getElementById("stSub"); if(a) a.textContent=s!=null?(dispName(s)||""):d?getName(d):"—"; if(b2) b2.textContent=d?waveLabel(d):""; kickStage(); }
+function stageHead(){ const el=document.getElementById("stNum")||{}; const s=stageSlot(); const d=stageData();
+  el.textContent=s!=null?slotLabel(s):"---"; const hn=document.getElementById("hlNum"); if(hn&&!document.getElementById("stNum")){ /* nada */ } if(hn){ hn.textContent=s!=null?slotLabel(s):"---"; document.getElementById("hlName").textContent=s!=null?(dispName(s)||""):"Prophet 6"; document.getElementById("hlBpm").textContent=d?pv(d,P.bpm):"—"; } const a=document.getElementById("stName"), b2=document.getElementById("stSub"); if(a) a.textContent=s!=null?(dispName(s)||""):d?getName(d):"—"; if(b2) b2.textContent=d?(waveLabel(d)+(stageMismatch()?` · vista previa (en el Prophet suena el ${slotLabel(state.curProg)})`:"")):""; kickStage(); }
 function stagePoll(){ clearTimeout(STG.pt); const go=state.view==="all"&&document.getElementById("stage")&&state.out&&!state.busy&&!state.waiter&&!state.wiz&&!document.hidden;
   if(go){ state.quietEdit=true; readEdit().then(r=>{ if(r){ STG.edAt=Date.now(); const sub=document.getElementById("stSub"); if(sub) sub.textContent=waveLabel(r.data); kickStage(); } }).finally(()=>{ state.quietEdit=false; }); }
   STG.pt=setTimeout(stagePoll,go?700:1200); }
