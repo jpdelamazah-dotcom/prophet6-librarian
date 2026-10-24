@@ -699,6 +699,11 @@ body.stagefull{overflow:hidden}
 .memdlg{width:min(920px,95vw)!important;max-height:92vh;overflow:auto;box-sizing:border-box}
 .cmpwrap>div{min-width:0}.cmpwrap .slab{flex-wrap:wrap}
 #memBody select{max-width:100%}
+
+.recbox{background:#1d2a21;border:1px solid #2f4a36;border-radius:14px;padding:14px 16px;margin:6px 0 14px}.rechead{display:flex;align-items:center;gap:12px}.rechead h3{margin:0;font-size:16px}
+.okpill,.badpill{font-size:12px;font-weight:600;padding:3px 10px;border-radius:12px}.okpill{background:#30d158;color:#062b12}.badpill{background:#ff9f0a;color:#2b1a00}
+.rect{width:100%;border-collapse:collapse;margin:10px 0;font-size:13px}.rect td{padding:8px;border-bottom:1px solid rgba(255,255,255,.06);vertical-align:top}.rect td:first-child{font-weight:700;width:20px}.rect tr.ok td:first-child{color:#30d158}.rect tr.bad td:first-child{color:#ff9f0a}.rect small{color:#9b9ba1}
+.lcdtxt{font-family:"IBM Plex Mono",monospace;color:#ff6a3d;background:#0b0b0d;padding:1px 6px;border-radius:4px;letter-spacing:.06em}
 </style>
 </head>
 <body>
@@ -963,7 +968,7 @@ function onMsg(e){
   const t=d[3];
   if(t===0x02){ const slot=d[4]*100+d[5]; const data=unpack(Array.from(d.slice(6,d.length-1)));
     state.slots[slot]={data,t:Date.now()}; resolveWait({slot,data}); renderSlot(slot); }
-  else if(t===0x0F){ const nib=Array.from(d.slice(4,d.length-1)); const g={}; for(let i=0;i*2+1<nib.length;i++) g[1024+i]=(nib[2*i]&15)|((nib[2*i+1]&15)<<4); state.globalsRead=g; state.globalsReadAt=Date.now(); log("Configuración global leída del Prophet."); if(state.gWaiter){ const w=state.gWaiter; state.gWaiter=null; w(g); } return; }
+  else if(t===0x0F){ const nib=Array.from(d.slice(4,d.length-1)); const g={}, DI=[1025,1024,1026,1027,1028,1029,1030,1031,1032,1033,1035,1039,1037,1040,1044,1041,1042,1043]; const raw=[]; for(let i=0;i*2+1<nib.length;i++) raw.push((nib[2*i]&15)|((nib[2*i+1]&15)<<4)); raw.forEach((v,i)=>{ if(DI[i]!=null) g[DI[i]]=v; }); state.globalsRaw=raw; state.globalsRead=g; state.globalsReadAt=Date.now(); log("Configuración global leída del Prophet."); if(state.gWaiter){ const w=state.gWaiter; state.gWaiter=null; w(g); } return; }
   else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data});
     if(prev&&!state.learn) editFlash(prev,data);
     showLcd("EDIT",getName(data)||"(sin nombre)","Edit buffer"); if(!state.quietEdit) log(`Edit buffer recibido: "${getName(data)}"`);
@@ -1488,12 +1493,12 @@ async function storeFromPanel(){
 /* Globales por NRPN (1024+). Etiquetas según el manual; verifica en la pantalla del Prophet las marcadas con *. */
 const GLOBALS=[ /* valores y ubicación según el Manual de Operación 2.1 (Apéndice C y «Global Settings») */
   {n:1026,name:"MIDI Channel",hw:"Globals fila superior · botón 2",key:"chan",opts:["All (todos)",...Array.from({length:16},(_,i)=>"Canal "+(i+1))],why:"Canal por el que el Prophet envía y recibe. Debe coincidir con el «Canal» de esta app (arriba). All recibe en los 16.",rec:null},
-  {n:1032,name:"MIDI SysEx",hw:"Globals fila superior · botón 8",opts:["MIDI (cable DIN)","USB"],why:"Puerto por el que viajan programas y dumps (SysEx). Para usar esta app por USB debe estar en USB. Si la app ya leyó tu edit buffer, está bien configurado.",rec:null},
-  {n:1030,name:"Param Rcv",hw:"Globals fila superior · botón 6",opts:["NR (NRPN)","CC","Off"],why:"Cómo acepta cambios de parámetros que llegan por MIDI. En NR podrías mover las perillas del panel de esta app y el sonido cambiaría en el Prophet.",rec:null},
-  {n:1029,name:"Param Xmit",hw:"Globals fila superior · botón 5",opts:["NR (NRPN)","CC","Off"],why:"Cómo transmite el Prophet lo que haces con sus perillas. En NR, Ableton (u otra app) puede grabar tus movimientos de perillas.",rec:null},
-  {n:1031,name:"MIDI Control",hw:"Globals fila superior · botón 7",opts:["Off","On"],why:"Si responde a pitch wheel, mod wheel, pedal y volumen recibidos por MIDI.",rec:null},
-  {n:1033,name:"MIDI Out",hw:"Globals fila superior · botón 9",opts:["Off","MIDI","USB","MIDI + USB"],why:"Por dónde sale el MIDI del Prophet (notas, perillas).",rec:null},
-  {n:1027,name:"MIDI Clock",hw:"Globals fila superior · botón 3",opts:["Off","Out (master)","In (slave)","Slave Thru (i-o)"],why:"Sincronía del arpegiador/secuenciador. Para seguir el tempo de Ableton: In. Ojo: en In, si no llega reloj, el arpegiador no corre.",rec:null},
+  {n:1032,name:"MIDI SysEx",hw:"Globals fila superior · botón 8",opts:["MIDI (cable DIN)","USB"],disp:["Mid","USb"],why:"Puerto por el que viajan programas y dumps (SysEx). Para usar esta app por USB debe estar en USB. Si la app ya leyó tu edit buffer, está bien configurado.",rec:null},
+  {n:1030,name:"Param Rcv",hw:"Globals fila superior · botón 6",opts:["Off","CC","NR (NRPN)"],disp:["OFF","CC","nr"],why:"Cómo acepta cambios de parámetros que llegan por MIDI. En NR podrías mover las perillas del panel de esta app y el sonido cambiaría en el Prophet.",rec:null},
+  {n:1029,name:"Param Xmit",hw:"Globals fila superior · botón 5",opts:["Off","CC","NR (NRPN)"],disp:["OFF","CC","nr"],why:"Cómo transmite el Prophet lo que haces con sus perillas. En NR, Ableton (u otra app) puede grabar tus movimientos de perillas.",rec:null},
+  {n:1031,name:"MIDI Control",hw:"Globals fila superior · botón 7",opts:["Off","On"],disp:["OFF","On"],why:"Si responde a pitch wheel, mod wheel, pedal y volumen recibidos por MIDI.",rec:null},
+  {n:1033,name:"MIDI Out",hw:"Globals fila superior · botón 9",opts:["MIDI","USB","MIDI + USB"],disp:["Mid","USb","btH"],why:"Por dónde sale el MIDI del Prophet (notas, perillas).",rec:null},
+  {n:1027,name:"MIDI Clock",hw:"Globals fila superior · botón 3",opts:["Off","Out (master)","In (slave)","Slave Thru (i-o)","In sin Start/Stop (n55)"],why:"Sincronía del arpegiador/secuenciador. Para seguir el tempo de Ableton: In. Ojo: en In, si no llega reloj, el arpegiador no corre.",rec:null},
   {n:1028,name:"Clock Port",hw:"Globals fila superior · botón 4",opts:["MIDI","USB"],why:"Puerto por donde llega el reloj MIDI.",rec:null},
   {n:1035,name:"Local Control",hw:"Globals fila inferior · botón 0",opts:["Off","On"],why:"On = teclado y perillas controlan el Prophet. Off = solo envían MIDI (útil si Ableton te devuelve las notas y oyes notas dobles).",rec:null},
   {n:1037,name:"Pot Mode",hw:"Globals fila inferior · botón 2",opts:["Relative","Passthru","Jump"],why:"Qué pasa al girar una perilla cuyo valor no coincide con el guardado. Relative: cambia en proporción · Passthru: no actúa hasta pasar por el valor guardado · Jump: salta al valor de la perilla.",rec:null},
@@ -1807,24 +1812,34 @@ function sendBpm(v){ v=Math.max(30,Math.min(250,Math.round(v))); if(!state.out) 
 
 /* ================= GLOBALES ================= */
 const GL_GROUPS=[["MIDI y conexión",[1026,1032,1033,1029,1030,1031]],["Sincronía (tempo con otros equipos)",[1027,1028]],["Teclado y control",[1035,1037,1041,1042,1040,1039]],["Afinación y salida",[1025,1024,1044,1043]]];
+
+const GL_REC=[[1030,2,"Param Rcv","6","nr","Para que la app pueda mover perillas, cargar recetas y calibrar."],[1029,2,"Param Xmit","5","nr","Para que la app vea tus perillas en vivo."],[1032,1,"MIDI SysEx","8","USb","Para leer y guardar sonidos por el cable USB."],[1033,2,"MIDI Out","9","btH","Para que la app vea tus notas, aftertouch y perillas (USB + MIDI)."],[1031,1,"MIDI Control","7","On","Para pitch bend, mod wheel y pedales por MIDI."]];
+function recHtml(){ const gr=state.globalsRead; if(!gr) return `<div class="callout2">Conecta el Prophet y pulsa «Leer del Prophet» para revisar tu configuración.</div>`;
+  const rows=GL_REC.map(([n,v,nm,btn,disp,why])=>{ const ok=gr[n]===v, g=GLOBALS.find(x=>x.n===n), cur=gr[n]; const curTxt=g&&g.disp&&g.disp[cur]!=null?`«${g.disp[cur]}»`:cur;
+    return `<tr class="${ok?"ok":"bad"}"><td>${ok?"✓":"✗"}</td><td><b>${nm}</b><br><small>${why}</small></td><td>Tu Prophet: <b>${curTxt}</b></td><td>${ok?"Listo":`GLOBALS (LED rojo) → botón <b>${btn}</b> → TENS/BANK hasta ver <b class="lcdtxt">${disp}</b>`}</td></tr>`; }).join("");
+  const allOk=GL_REC.every(([n,v])=>gr[n]===v);
+  return `<div class="recbox"><div class="rechead"><h3>Configuración recomendada para esta app</h3><span class="${allOk?"okpill":"badpill"}">${allOk?"Todo listo":"Faltan ajustes"}</span></div><table class="rect">${rows}</table>
+   <p class="note">Cómo se hace en el Prophet: pulsa <b>GLOBALS</b> una vez (LED <b>rojo</b>). Pulsa el botón numérico indicado: la pantalla muestra el valor actual. Usa <b>TENS</b> (avanza) y <b>BANK</b> (retrocede) hasta ver el texto indicado. Para salir, pulsa <b>GLOBALS</b> dos veces (pasa por el LED amarillo y se apaga). Luego «Leer del Prophet».</p></div>`; }
 function renderGlobalsPage(){
   const pg=$("#globalsPage"); const gr=state.globalsRead||{}; const editable=!state.safe;
   const card=n=>{ const i=GLOBALS.findIndex(g=>g.n===n); if(i<0) return ""; const g=GLOBALS[i]; const cur=gr[n]!=null?gr[n]:state.globals[n];
     let ctrl;
-    if(g.opts&&g.opts.length<=5) ctrl=`<div class="gseg">${g.opts.map((o,j)=>`<button class="${cur===j?"act":""}" data-gn="${i}" data-gv="${j}">${esc(o)}</button>`).join("")}</div>`;
+    if(g.opts&&g.opts.length<=5) ctrl=`<div class="gseg">${g.opts.map((o,j)=>`<button class="${cur===j?"act":""}" data-gn="${i}" data-gv="${j}">${esc(o)}${g.disp&&g.disp[j]?` <small class="lcdtxt">${esc(g.disp[j])}</small>`:""}</button>`).join("")}</div>`;
     else if(g.opts) ctrl=`<select data-gsel="${i}">${cur==null?'<option value="">—</option>':""}${g.opts.map((o,j)=>`<option value="${j}" ${cur===j?"selected":""}>${esc(o)}</option>`).join("")}</select>`;
     else ctrl=`<div class="grange"><input type="range" data-grng="${i}" min="${g.range[0]}" max="${g.range[1]}" value="${cur??Math.round((g.range[0]+g.range[1])/2)}"><b id="grv${i}">${cur!=null?g.fmt(cur):"—"}</b><button data-gapply="${i}">Aplicar</button></div>`;
     return `<div class="gitem"><div class="gtop"><b>${g.name}</b><span class="ghw">${g.hw||""}</span></div><p>${g.why}</p>${ctrl}</div>`; };
   pg.innerHTML=`<div class="page"><div class="phead"><div><h2>Configuración global</h2><p class="note">Ajustes que afectan a todo el Prophet‑6 (no a un sonido). ${state.globalsRead?`Valores leídos de tu Prophet ${new Date(state.globalsReadAt).toLocaleTimeString()}.`:"Conecta el Prophet para ver sus valores actuales."} ${editable?"":"<b>Para cambiarlos, elige el modo «Editar» arriba a la derecha.</b>"}</p></div>
    <div class="row"><button id="glRead">Leer del Prophet</button></div></div>
+   ${recHtml()}
    <div class="callout2"><b>Para sincronizar el tempo con otros equipos</b> (Ableton, caja de ritmos): pon <b>MIDI Clock = In</b> y elige el puerto en <b>Clock Port</b>. El Prophet seguirá el tempo que le llegue y el BPM de cada sonido dejará de importar. Con <b>Out</b>, el Prophet manda su tempo a los demás.</div>
    ${GL_GROUPS.map(([t,ns])=>`<h3 class="gh3">${t}</h3><div class="ggrid">${ns.map(card).join("")}</div>`).join("")}
    <p class="note">Ojo: si cambias Param Rcv a algo distinto de NR, la app ya no podrá enviarle cambios de perillas ni recetas. Si cambias MIDI SysEx a otro puerto, la app dejará de leer sonidos por USB.</p></div>`;
   $("#glRead").onclick=async()=>{ if(!state.out) return toast("Conecta primero el Prophet."); const r=await readGlobals(); toast(r?"Configuración leída.":"El Prophet no respondió."); renderGlobalsPage(); };
   const apply=async(i,v)=>{ if(state.safe) return toast("Para cambiar la configuración, elige el modo «Editar» (arriba a la derecha)."); const g=GLOBALS[i];
+    if(g.n===1030){ return confirmDlg(`<h3 style="margin-top:0">Param Rcv se cambia solo en el Prophet</h3><p>Por diseño, el Prophet ignora este ajuste si llega por MIDI. Hazlo en el equipo:</p><ol><li>Pulsa <b>GLOBALS</b> una vez (LED rojo).</li><li>Pulsa el botón <b>6</b>. Con <b>TENS</b> (avanza) / <b>BANK</b> (retrocede) busca <b class="lcdtxt">${esc(g.disp[v])}</b>.</li><li>Pulsa <b>GLOBALS</b> dos veces para salir.</li></ol>`); }
     if([1029,1030,1032,1033].includes(g.n)&&!await confirmDlg(`<p>Vas a cambiar <b>${g.name}</b> a <b>${esc(g.opts?g.opts[v]:g.fmt(v))}</b>.</p><p class="note">Este ajuste afecta cómo el Prophet se comunica con la app. Si algo deja de responder, vuelve a dejarlo como estaba desde el propio Prophet (${g.hw}).</p>`)) return;
     sendGlobal(g,v); await sleep(300); const rd=await readGlobals(); renderGlobalsPage();
-    if(rd&&rd[g.n]!==v){ const btn=(g.hw||"").replace(/.*botón\s*/,""); await confirmDlg(`<h3 style="margin-top:0">El Prophet no aceptó el cambio</h3><p>Lo más probable: en tu Prophet <b>Param Rcv</b> no está en <b>NR</b>, y así ignora lo que le manda la app (incluidos los ajustes globales). Hazlo directo en el Prophet:</p><ol><li>Pulsa <b>GLOBALS</b> una vez (LED rojo = fila de arriba).</li><li>Pulsa el botón numérico <b>6</b> (Param Rcv) y con <b>TENS</b> (subir) / <b>BANK</b> (bajar) elige <b>nr</b>.</li><li>Pulsa el botón <b>${esc(btn||"del ajuste")}</b> (${esc(g.name)}) y elige el valor que quieres.</li><li>Pulsa <b>GLOBALS</b> hasta salir.</li></ol><p class="note">Después pulsa «Leer del Prophet» aquí para confirmar.</p>`); } };
+    if(rd&&rd[g.n]!==v){ const btn=(g.hw||"").replace(/.*botón\s*/,""); await confirmDlg(`<h3 style="margin-top:0">El Prophet no aceptó el cambio</h3><p>Lo más probable: en tu Prophet <b>Param Rcv</b> no está en <b>NR</b>, y así ignora lo que le manda la app (incluidos los ajustes globales). Hazlo directo en el Prophet:</p><ol><li>Pulsa <b>GLOBALS</b> una vez (LED rojo = fila de arriba).</li><li>Pulsa el botón numérico <b>6</b> (Param Rcv) y con <b>TENS</b> (subir) / <b>BANK</b> (bajar) elige <b>nr</b>.</li>${g.n!==1030?`<li>Pulsa el botón <b>${esc(btn||"del ajuste")}</b> (${esc(g.name)}) y elige el valor que quieres.</li>`:""}<li>Pulsa <b>GLOBALS</b> dos veces para salir.</li></ol><p class="note">Después pulsa «Leer del Prophet» aquí para confirmar.</p>`); } };
   pg.querySelectorAll("[data-gn]").forEach(b=>b.onclick=()=>apply(+b.dataset.gn,+b.dataset.gv));
   pg.querySelectorAll("[data-gsel]").forEach(s=>s.onchange=()=>{ if(s.value!=="") apply(+s.dataset.gsel,+s.value); });
   pg.querySelectorAll("[data-grng]").forEach(r=>r.oninput=()=>{ $("#grv"+r.dataset.grng).textContent=GLOBALS[+r.dataset.grng].fmt(+r.value); });
