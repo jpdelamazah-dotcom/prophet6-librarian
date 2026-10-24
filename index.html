@@ -723,6 +723,25 @@ body.stagefull{overflow:hidden}
 .archsvg.playing .awire{stroke:#ff6a3d;stroke-dasharray:6 6;animation:archflow .5s linear infinite}
 @keyframes archflow{to{stroke-dashoffset:-32}}
 @media (prefers-reduced-motion:reduce){ .archsvg .flow,.archsvg .awire{animation:none!important} }
+
+.recbox.ok{background:#16301f}.recbox ul{margin:8px 0}.recbox p{margin:8px 0}
+.hwsvg{width:100%;max-width:760px;display:block;margin:10px 0;border-radius:12px}
+.hwsvg .hwbtn{fill:#2a2a2d;stroke:#0d0d0e}.hwsvg .hwbtn.tgt{fill:#3a3a3f}
+.hwsvg .hwl{font:600 10px "IBM Plex Sans",sans-serif;fill:#cfcfd3}.hwsvg .hwl.s{font-size:8.5px;fill:#8e8e93;font-weight:500}.hwsvg .hwn{font:700 14px "IBM Plex Mono",monospace;fill:#e8e8e8}
+.hwsvg .hwlcd{font:700 30px "IBM Plex Mono",monospace;fill:#ff3b2f;letter-spacing:4px}
+.hwsvg .hwhi .hwbtn{fill:#ff6a3d;stroke:#ffd0bd;stroke-width:2;animation:hwpulse 1s ease-in-out infinite}
+@keyframes hwpulse{50%{fill:#ffb08f}}
+.hwstep{display:flex;align-items:center;gap:12px;font-size:14.5px}.hwnum{font:700 13px "IBM Plex Mono",monospace;background:#ff6a3d;color:#1a0b05;border-radius:12px;padding:3px 9px}.hwstep .sp{flex:1}
+
+.archtabs{display:flex;gap:6px;margin:2px 0 10px}.archtabs button{font-size:12.5px;padding:5px 12px;border-radius:14px;background:#1f2125!important;color:#c9c9cd!important;border:1px solid #2c2d31!important}.archtabs button.act{background:#5ac8fa!important;color:#04202b!important;font-weight:600}
+.stage.arch .sarch{overflow:auto}
+.bcards{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.bcard{background:#0d0e11;border:1px solid #26282d;border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.bch{display:flex;align-items:center;gap:10px}.bch b{font-size:14px;color:#f2f2f2}.bcn{width:24px;height:24px;border-radius:12px;background:#ff6a3d;color:#1a0b05;font:700 12px "IBM Plex Mono",monospace;display:flex;align-items:center;justify-content:center;flex:none}
+.bcard svg{width:100%;height:auto;display:block}.bcard p{margin:0;font-size:12.5px;color:#b8b8bc;line-height:1.45}
+.bcard .cw{fill:none;stroke-width:2}.bcard .cl{font:700 10px "IBM Plex Sans",sans-serif;letter-spacing:.05em}.bcard .cs{font:500 9.5px "IBM Plex Sans",sans-serif;fill:#9b9ba1}
+.bcard .ct{fill:#1c1c20}.bcard .cbg{fill:#121316;stroke:#1f2024}.bcard .cgl{stroke:rgba(255,255,255,.06)}
+.stage.arch.full .bcards{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 </style>
 </head>
 <body>
@@ -1519,7 +1538,7 @@ const GLOBALS=[ /* valores y ubicación según el Manual de Operación 2.1 (Apé
   {n:1030,name:"Param Rcv",hw:"Globals fila superior · botón 6",opts:["Off","CC","NR (NRPN)"],disp:["OFF","CC","nr"],why:"Cómo acepta cambios de parámetros que llegan por MIDI. En NR podrías mover las perillas del panel de esta app y el sonido cambiaría en el Prophet.",rec:null},
   {n:1029,name:"Param Xmit",hw:"Globals fila superior · botón 5",opts:["Off","CC","NR (NRPN)"],disp:["OFF","CC","nr"],why:"Cómo transmite el Prophet lo que haces con sus perillas. En NR, Ableton (u otra app) puede grabar tus movimientos de perillas.",rec:null},
   {n:1031,name:"MIDI Control",hw:"Globals fila superior · botón 7",opts:["Off","On"],disp:["OFF","On"],why:"Si responde a pitch wheel, mod wheel, pedal y volumen recibidos por MIDI.",rec:null},
-  {n:1033,name:"MIDI Out",hw:"Globals fila superior · botón 9",opts:["MIDI","USB","MIDI + USB"],disp:["Mid","USb","btH"],why:"Por dónde sale el MIDI del Prophet (notas, perillas).",rec:null},
+  {n:1033,name:"MIDI Out",hw:"Globals fila superior · botón 9",opts:["Off","MIDI","USB","MIDI + USB"],disp:["OFF","Mid","USb","btH"],why:"Por dónde sale el MIDI del Prophet (notas, perillas).",rec:null},
   {n:1027,name:"MIDI Clock",hw:"Globals fila superior · botón 3",opts:["Off","Out (master)","In (slave)","Slave Thru (i-o)","In sin Start/Stop (n55)"],why:"Sincronía del arpegiador/secuenciador. Para seguir el tempo de Ableton: In. Ojo: en In, si no llega reloj, el arpegiador no corre.",rec:null},
   {n:1028,name:"Clock Port",hw:"Globals fila superior · botón 4",opts:["MIDI","USB"],why:"Puerto por donde llega el reloj MIDI.",rec:null},
   {n:1035,name:"Local Control",hw:"Globals fila inferior · botón 0",opts:["Off","On"],why:"On = teclado y perillas controlan el Prophet. Off = solo envían MIDI (útil si Ableton te devuelve las notas y oyes notas dobles).",rec:null},
@@ -1835,16 +1854,32 @@ function sendBpm(v){ v=Math.max(30,Math.min(250,Math.round(v))); if(!state.out) 
 /* ================= GLOBALES ================= */
 const GL_GROUPS=[["MIDI y conexión",[1026,1032,1033,1029,1030,1031]],["Sincronía (tempo con otros equipos)",[1027,1028]],["Teclado y control",[1035,1037,1041,1042,1040,1039]],["Afinación y salida",[1025,1024,1044,1043]]];
 
-const GL_REC=[[1030,2,"Param Rcv","6","nr","Para que la app pueda mover perillas, cargar recetas y calibrar."],[1029,2,"Param Xmit","5","nr","Para que la app vea tus perillas en vivo."],[1032,1,"MIDI SysEx","8","USb","Para leer y guardar sonidos por el cable USB."],[1033,2,"MIDI Out","9","btH","Para que la app vea tus notas, aftertouch y perillas (USB + MIDI)."],[1031,1,"MIDI Control","7","On","Para pitch bend, mod wheel y pedales por MIDI."]];
-function recHtml(){ const gr=state.globalsRead; if(!gr) return `<div class="callout2">Conecta el Prophet y pulsa «Leer del Prophet» para revisar tu configuración.</div>`;
-  const works={1032:state.slots.some(Boolean)&&"La app ya lee tus sonidos por USB", 1033:state.rxNotes&&"La app ya recibe tus notas", 1029:state.rxNrpn&&"La app ya recibe tus perillas"};
-  const st=GL_REC.map(([n,v])=>works[n]?"ok":gr[n]==null?"unk":gr[n]===v?"ok":"bad");
-  const rows=GL_REC.map(([n,v,nm,btn,disp,why],i)=>{ const g=GLOBALS.find(x=>x.n===n), cur=gr[n], s=st[i]; const curTxt=works[n]?works[n]:cur==null?"no pude leerlo":(g&&g.disp&&g.disp[cur]!=null?`«${g.disp[cur]}»`:cur);
-    return `<tr class="${s}"><td>${s==="ok"?"✓":s==="unk"?"?":"✗"}</td><td><b>${nm}</b><br><small>${why}</small></td><td>${s==="ok"&&works[n]?"":"Tu Prophet: "}<b>${curTxt}</b></td><td>${s==="ok"?"Listo":`GLOBALS (LED rojo) → botón <b>${btn}</b> → TENS/BANK hasta ver <b class="lcdtxt">${disp}</b>`}</td></tr>`; }).join("");
-  const allOk=st.every(x=>x==="ok");
-  return `<div class="recbox"><div class="rechead"><h3>Configuración recomendada para esta app</h3><span class="${allOk?"okpill":"badpill"}">${allOk?"Todo listo":"Faltan ajustes"}</span></div><table class="rect">${rows}</table>
-   <p class="note">Cómo se hace en el Prophet: pulsa <b>GLOBALS</b> una vez (LED <b>rojo</b>). Pulsa el botón numérico indicado: la pantalla muestra el valor actual. Usa <b>TENS</b> (avanza) y <b>BANK</b> (retrocede) hasta ver el texto indicado. Para salir, pulsa <b>GLOBALS</b> dos veces (pasa por el LED amarillo y se apaga). Luego «Leer del Prophet».</p>
-   <details class="gdiag"><summary>Diagnóstico técnico</summary><p class="note">Respuesta del Prophet (${state.globalsFmt||"?"}): <code>${(state.globalsBytes||[]).map(x=>x.toString(16).padStart(2,"0")).join(" ")}</code></p><p class="note">Valores: ${(state.globalsRaw||[]).join(", ")}</p></details></div>`; }
+const GL_REC=[[1030,2,"Param Rcv","6","nr","Para que la app pueda mover perillas, cargar recetas y calibrar."],[1029,2,"Param Xmit","5","nr","Para que la app vea tus perillas en vivo."],[1032,1,"MIDI SysEx","8","USb","Para leer y guardar sonidos por el cable USB."],[1033,3,"MIDI Out","9","btH","Para que la app vea tus notas, aftertouch y perillas (USB + MIDI)."],[1031,1,"MIDI Control","7","On","Para pitch bend, mod wheel y pedales por MIDI."]];
+function hwGuideSvg(step,btn,target,cur){ // dibujo del sector GLOBALS del Prophet-6 con el paso resaltado
+  const labels=["Transpose","Master Tune","MIDI Channel","MIDI Clock","Clock Port","Param Xmit","Param Rcv","MIDI Control","MIDI SysEx","MIDI Out"];
+  const hi=(k)=>step===k?' class="hwhi"':"";
+  let s=`<svg viewBox="0 0 760 210" class="hwsvg"><rect x="0" y="0" width="760" height="210" rx="12" fill="#121214"/>`;
+  s+=`<rect x="20" y="30" width="110" height="56" rx="6" fill="#050505" stroke="#333"/><text x="75" y="70" text-anchor="middle" class="hwlcd">${step>=3?target:step===2?cur:"---"}</text><text x="75" y="22" text-anchor="middle" class="hwl">PANTALLA</text>`;
+  s+=`<g${hi(3)}><rect x="20" y="120" width="50" height="34" rx="4" class="hwbtn"/><text x="45" y="170" text-anchor="middle" class="hwl">BANK</text><text x="45" y="182" text-anchor="middle" class="hwl s">baja</text></g>`;
+  s+=`<g${hi(3)}><rect x="80" y="120" width="50" height="34" rx="4" class="hwbtn"/><text x="105" y="170" text-anchor="middle" class="hwl">TENS</text><text x="105" y="182" text-anchor="middle" class="hwl s">sube</text></g>`;
+  for(let i=0;i<10;i++){ const x=160+i*52; s+=`<g${hi(2)&&i===+btn?hi(2):""}><text x="${x+20}" y="${i%2?36:24}" text-anchor="middle" class="hwl s">${labels[i]}</text><rect x="${x}" y="120" width="40" height="34" rx="4" class="hwbtn${i===+btn?" tgt":""}"/><text x="${x+20}" y="142" text-anchor="middle" class="hwn">${i}</text></g>`; }
+  s+=`<g${hi(1)}${step===4?' class="hwhi"':""}><rect x="690" y="120" width="56" height="34" rx="4" class="hwbtn"/><circle cx="718" cy="110" r="5" fill="${step>=1&&step<=3?"#ff3b30":"#3a1d1b"}"/><text x="718" y="170" text-anchor="middle" class="hwl">GLOBALS</text></g>`;
+  return s+"</svg>"; }
+function recHtml(){ const gr=state.globalsRead; if(!gr) return `<div class="callout2">Conecta el Prophet: la app revisará sola su configuración.</div>`;
+  const works={1032:state.slots.some(Boolean), 1033:state.rxNotes, 1029:state.rxNrpn};
+  const ok=([n,v])=>works[n]||gr[n]===v; const rcvOk=gr[1030]===2; const missing=GL_REC.filter(r=>!ok(r));
+  const g=n=>GLOBALS.find(x=>x.n===n), curDisp=n=>{ const x=g(n), c=gr[n]; return x&&x.disp&&x.disp[c]!=null?x.disp[c]:(c==null?"?":String(c)); };
+  if(!missing.length) return `<div class="recbox ok"><div class="rechead"><h3>Tu Prophet está bien configurado para esta app</h3><span class="okpill">Todo listo ✓</span></div><p class="note">Notas, perillas, aftertouch, lectura de sonidos y recetas funcionan.</p></div>`;
+  if(!rcvOk){ const st=state.hwStep||1; const cur=curDisp(1030);
+    const txt=["","Pulsa <b>GLOBALS</b> una vez. Se enciende el LED <b style='color:#ff3b30'>rojo</b>.","Pulsa el botón <b>6</b> (Param Rcv). La pantalla muestra lo que tiene ahora: <b class='lcdtxt'>"+esc(cur)+"</b>.","Pulsa <b>TENS</b> (o BANK) hasta que la pantalla diga <b class='lcdtxt'>nr</b>.","Pulsa <b>GLOBALS</b> dos veces para salir. La app lo detecta sola en unos segundos."][st];
+    return `<div class="recbox"><div class="rechead"><h3>Solo falta 1 cosa, y se hace en el Prophet</h3><span class="badpill">Param Rcv: ${esc(cur)} → nr</span></div>
+     <p>El Prophet no deja cambiar este ajuste por cable: es su seguro. Cuando esté en <b class="lcdtxt">nr</b>, la app ajusta todo lo demás sola con un clic.</p>
+     ${hwGuideSvg(st,6,"nr",cur)}
+     <div class="hwstep"><span class="hwnum">${st}/4</span><span>${txt}</span><span class="sp"></span><button id="hwPrev" ${st<=1?"disabled":""}>‹ Atrás</button><button class="pri" id="hwNext">${st<4?"Listo, siguiente ›":"Revisar ahora"}</button></div></div>`; }
+  const list=missing.map(([n,v,nm,btn,disp])=>`<li><b>${nm}</b>: ${esc(curDisp(n))} → <b class="lcdtxt">${disp}</b></li>`).join("");
+  return `<div class="recbox"><div class="rechead"><h3>Faltan ${missing.length} ajuste(s), los hago yo</h3><span class="badpill">Un clic</span></div><ul>${list}</ul>
+   <div class="row"><button class="pri" id="glFix">Ajustar automáticamente</button><span class="note">Necesita el modo «Editar». La app los envía y luego verifica leyendo el Prophet.</span></div></div>`; }
+setInterval(async()=>{ if(state.view==="globals"&&state.out&&!state.busy&&!state.waiter&&!document.hidden&&!$("#dlg").open){ const before=JSON.stringify(state.globalsRead); await readGlobals(); if(JSON.stringify(state.globalsRead)!==before){ if(state.globalsRead&&state.globalsRead[1030]===2) state.hwStep=1; renderGlobalsPage(); } } },2500);
 function renderGlobalsPage(){
   const pg=$("#globalsPage"); const gr=state.globalsRead||{}; const editable=!state.safe;
   const card=n=>{ const i=GLOBALS.findIndex(g=>g.n===n); if(i<0) return ""; const g=GLOBALS[i]; const cur=gr[n]!=null?gr[n]:state.globals[n];
@@ -1856,9 +1891,14 @@ function renderGlobalsPage(){
   pg.innerHTML=`<div class="page"><div class="phead"><div><h2>Configuración global</h2><p class="note">Ajustes que afectan a todo el Prophet‑6 (no a un sonido). ${state.globalsRead?`Valores leídos de tu Prophet ${new Date(state.globalsReadAt).toLocaleTimeString()}.`:"Conecta el Prophet para ver sus valores actuales."} ${editable?"":"<b>Para cambiarlos, elige el modo «Editar» arriba a la derecha.</b>"}</p></div>
    <div class="row"><button id="glRead">Leer del Prophet</button></div></div>
    ${recHtml()}
+   <details class="gdiag"><summary>Diagnóstico técnico</summary><p class="note">Respuesta del Prophet (${state.globalsFmt||"?"}): <code>${(state.globalsBytes||[]).map(x=>x.toString(16).padStart(2,"0")).join(" ")}</code> · Valores: ${(state.globalsRaw||[]).join(", ")}</p></details>
    <div class="callout2"><b>Para sincronizar el tempo con otros equipos</b> (Ableton, caja de ritmos): pon <b>MIDI Clock = In</b> y elige el puerto en <b>Clock Port</b>. El Prophet seguirá el tempo que le llegue y el BPM de cada sonido dejará de importar. Con <b>Out</b>, el Prophet manda su tempo a los demás.</div>
    ${GL_GROUPS.map(([t,ns])=>`<h3 class="gh3">${t}</h3><div class="ggrid">${ns.map(card).join("")}</div>`).join("")}
    <p class="note">Ojo: si cambias Param Rcv a algo distinto de NR, la app ya no podrá enviarle cambios de perillas ni recetas. Si cambias MIDI SysEx a otro puerto, la app dejará de leer sonidos por USB.</p></div>`;
+  const hp=$("#hwPrev"), hn=$("#hwNext"); if(hp) hp.onclick=()=>{ state.hwStep=Math.max(1,(state.hwStep||1)-1); renderGlobalsPage(); }; if(hn) hn.onclick=async()=>{ if((state.hwStep||1)<4){ state.hwStep=(state.hwStep||1)+1; renderGlobalsPage(); } else { await readGlobals(); if(state.globalsRead&&state.globalsRead[1030]!==2) toast("Todavía dice «"+((GLOBALS.find(x=>x.n===1030).disp[state.globalsRead[1030]])||"?")+"». Repite los pasos."); state.hwStep=1; renderGlobalsPage(); } };
+  const gf=$("#glFix"); if(gf) gf.onclick=async()=>{ if(state.safe){ await setMode("editar"); if(state.safe) return; } const gr=state.globalsRead||{}; const todo=GL_REC.filter(([n,v])=>n!==1030&&n!==1032&&gr[n]!==v);
+    for(const [n,v,nm] of todo){ sendNRPN(n,v); state.globals[n]=v; await sleep(120); } await sleep(300); await readGlobals(); renderGlobalsPage();
+    const bad=todo.filter(([n,v])=>state.globalsRead&&state.globalsRead[n]!==v); toast(bad.length?`No quedaron: ${bad.map(x=>x[2]).join(", ")}. Revisa el diagnóstico.`:"Listo: configuración ajustada ✓"); };
   $("#glRead").onclick=async()=>{ if(!state.out) return toast("Conecta primero el Prophet."); const r=await readGlobals(); toast(r?"Configuración leída.":"El Prophet no respondió."); renderGlobalsPage(); };
   const apply=async(i,v)=>{ if(state.safe) return toast("Para cambiar la configuración, elige el modo «Editar» (arriba a la derecha)."); const g=GLOBALS[i];
     if(g.n===1030){ return confirmDlg(`<h3 style="margin-top:0">Param Rcv se cambia solo en el Prophet</h3><p>Por diseño, el Prophet ignora este ajuste si llega por MIDI. Hazlo en el equipo:</p><ol><li>Pulsa <b>GLOBALS</b> una vez (LED rojo).</li><li>Pulsa el botón <b>6</b>. Con <b>TENS</b> (avanza) / <b>BANK</b> (retrocede) busca <b class="lcdtxt">${esc(g.disp[v])}</b>.</li><li>Pulsa <b>GLOBALS</b> dos veces para salir.</li></ol>`); }
@@ -2086,21 +2126,97 @@ function archSvg(d){ const v=k=>pv(d,P[k]), B=(x)=>x-127, playing=[...STG.notes.
   const aa=Math.abs(B(v("atAmt")))/127; if(aa>0.005){ if(v("atF1")) s+=M(at,"osc1",aa,"#bf5af2"); if(v("atF2")) s+=M(at,"osc2",aa,"#bf5af2"); if(v("atLP")) s+=M(at,"lp",aa,"#bf5af2"); if(v("atHP")) s+=M(at,"hp",aa,"#bf5af2"); if(v("atVCA")) s+=M(at,"vca",aa,"#bf5af2"); if(v("atLFO")) s+=M(at,"lfo",aa,"#bf5af2"); }
   return s+body+"</svg>"; }
 function drawArch(force){ const el=document.getElementById("archSvg"); if(!el) return; const d=stageData(); if(!d){ el.innerHTML='<p class="note" style="padding:20px">Conecta el Prophet o elige un sonido para ver su arquitectura.</p>'; return; }
-  const sig=Array.from(d).join(",")+"|"+[...STG.notes.values()].filter(k=>k.off==null).length+"|"+Math.round((STG.at||0)*20); if(!force&&sig===STG.archSig) return; STG.archSig=sig; el.innerHTML=archSvg(d); }
+  const sig=Array.from(d).join(",")+"|"+[...STG.notes.values()].filter(k=>k.off==null).length+"|"+Math.round((STG.at||0)*20); if(!force&&sig===STG.archSig) return; STG.archSig=sig; el.innerHTML=STG.archMode==="map"?archSvg(d):buildCardsHtml(d); }
 setInterval(()=>{ if(STG.arch&&!document.hidden) drawArch(false); },200);
+/* ===== «Cómo se construye el sonido»: tarjetas visuales paso a paso ===== */
+const FX_KIND={OFF:"off",bbd:"delay",ddL:"delay",CHO:"chorus",PH1:"phaser",PH2:"phaser",PH3:"phaser",rin:"ring",FL1:"chorus",FL2:"chorus",HAL:"reverb",rOO:"reverb",PLA:"reverb",SPr:"reverb"};
+function pth(pts){ return pts.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(""); }
+function secs(t){ return t<1?Math.round(t*1000)+" ms":t.toFixed(t<10?1:0)+" s"; }
+function cardSources(d){ const v=k=>pv(d,P[k]); const W=300,H=170; const semi=(v("osc2Freq")-v("osc1Freq"))+(v("osc2Fine")-127)/254; const r2=Math.pow(2,semi/12);
+  const row=(y,col,fn,lvl,lab)=>{ const pts=[]; for(let i=0;i<=120;i++){ const p=i/120*2; pts.push([60+i/120*170,y-fn(p)*14]); } return `<text x="8" y="${y+4}" class="cl" fill="${col}">${lab}</text><path d="${pth(pts)}" stroke="${col}" stroke-opacity="${0.25+lvl*0.75}" class="cw"/><rect x="240" y="${y-8}" width="50" height="8" rx="4" class="ct"/><rect x="240" y="${y-8}" width="${(50*lvl).toFixed(1)}" height="8" rx="4" fill="${col}"/>`; };
+  const l1=v("osc1Lvl")/127,l2=v("osc2Lvl")/127,ls=v("subLvl")/127,ln=v("noise")/127;
+  const f1=p=>oscWave(v("osc1Shape"),v("osc1PW"),p%1), f2=p=>oscWave(v("osc2Shape"),v("osc2PW"),(p*r2)%1), fs=p=>((p/2)%1)<0.5?1:-1, fnz=p=>Math.sin(p*937.1)*Math.sin(p*311.7);
+  let s=`<svg viewBox="0 0 ${W} ${H}">`+row(22,"#ff6a3d",f1,l1,"OSC 1")+row(52,"#ff9f0a",f2,l2,"OSC 2")+row(82,"#ffd60a",fs,ls,"SUB")+row(112,"#bf5af2",fnz,ln,"RUIDO");
+  const tot=l1+l2+ls+ln||1, mix=[]; for(let i=0;i<=160;i++){ const p=i/160*2; mix.push([60+i/160*230,152-((f1(p)*l1+f2(p)*l2+fs(p)*ls+fnz(p)*ln*0.6)/tot)*16]); }
+  s+=`<line x1="8" y1="128" x2="292" y2="128" class="cgl"/><text x="8" y="156" class="cl" fill="#fff">= MEZCLA</text><path d="${pth(mix)}" stroke="#ffffff" class="cw"/></svg>`;
+  const parts=[]; if(l1>0.05) parts.push(`Osc 1 en ${shapeWord(v("osc1Shape"))}`); if(l2>0.05) parts.push(`Osc 2 en ${shapeWord(v("osc2Shape"))}${Math.abs(semi)>0.3?` (${semi>0?"+":""}${semi.toFixed(0)} semitonos)`:Math.abs(semi)>0.02?" un poco desafinado: suena más ancho":""}`); if(ls>0.05) parts.push("sub una octava abajo: más cuerpo"); if(ln>0.05) parts.push("ruido: soplo/aire");
+  return {t:"Fuentes: de dónde nace el sonido",svg:s,p:parts.join(" · ")||"Sin osciladores audibles"}; }
+function cardFilter(d){ const W=300,H=170, c=filtCfg(d,0.6), f0=110, ps=partialsSim(d,f0), X=f=>10+Math.log(f/20)/Math.log(1000)*280;
+  let s=`<svg viewBox="0 0 ${W} ${H}"><rect x="10" y="10" width="280" height="130" class="cbg"/>`;
+  for(const q of ps.list.slice(0,90)){ const x=X(q.f), a=Math.min(1,q.a*1.4), g=Math.min(1,filtH(q.f,c)); const h=a*110, hp=h*Math.min(1,g);
+    s+=`<rect x="${(x-1.2).toFixed(1)}" y="${(140-h).toFixed(1)}" width="2.4" height="${h.toFixed(1)}" fill="#3a3a3f"/><rect x="${(x-1.2).toFixed(1)}" y="${(140-hp).toFixed(1)}" width="2.4" height="${hp.toFixed(1)}" fill="hsl(${Math.max(0,Math.min(195,(x-10)/280*230-25))},90%,58%)"/>`; }
+  const cp=[]; for(let i=0;i<=140;i++){ const f=20*Math.pow(1000,i/140); cp.push([X(f),140-2*Math.tanh(filtH(f,c)/2)/2*125]); }
+  s+=`<path d="${pth(cp)}" stroke="#ff6a3d" stroke-width="2.5" fill="none"/><circle cx="${X(Math.min(19000,c.lp)).toFixed(1)}" cy="${(140-2*Math.tanh(filtH(c.lp,c)/2)/2*125).toFixed(1)}" r="5" fill="#fff"/>`;
+  [100,1000,10000].forEach(f=>s+=`<text x="${X(f)}" y="155" class="cs" text-anchor="middle">${f>=1000?f/1000+"k":f} Hz</text>`); s+=`<text x="12" y="166" class="cs">graves</text><text x="288" y="166" class="cs" text-anchor="end">agudos</text></svg>`;
+  const lp=c.lp, res=pv(d,P.lpRes)/255; const bright=lp>4000?"brillante y abierto":lp>1200?"equilibrado":lp>400?"suave, apagado":"muy oscuro";
+  return {t:"Filtro: qué armónicos pasan",svg:s,p:`En color, lo que suena; en gris, lo que el filtro corta. Corte ≈ ${lp<1000?Math.round(lp)+" Hz":(lp/1000).toFixed(1)+" kHz"}: ${bright}.${res>0.45?" Resonancia alta: realza el corte (sonido «chillón»/silbante).":""}${pv(d,P.hpFreq)>10?" El pasa-altos además le quita graves.":""}`}; }
+function envCurve(e,x0,y0,w,h){ const A=learnedEnvT("a",e.a),D=learnedEnvT("d",e.d),S=learnedSus(e.s),R=learnedEnvT("r",e.r);
+  const f=t=>0.06+Math.log10(1+t*8); const wa=f(A), wd=S>0.97?0.05:f(D), wh=0.45, wr=f(R), tot=wa+wd+wh+wr, k=w/tot;
+  const xa=x0+wa*k, xd=xa+wd*k, xh=xd+wh*k, xr=x0+w; const y=lv=>y0+h-lv*h;
+  const pts=[[x0,y(0)]]; for(let i=1;i<=10;i++) pts.push([x0+i/10*(xa-x0),y(i/10)]);
+  const dShow=Math.min(D,4*D); for(let i=1;i<=14;i++){ const t=i/14*dShow*1.2; pts.push([xa+i/14*(xd-xa),y(S+(1-S)*Math.exp(-t/(D/4)))]); }
+  const lvH=S+(1-S)*Math.exp(-1.2*dShow/(D/4)); pts.push([xh,y(lvH)]); for(let i=1;i<=14;i++){ const t=i/14*R*1.2; pts.push([xh+i/14*(xr-xh),y(lvH*Math.exp(-t/(R/4)))]); }
+  return {path:pth(pts),xa,xd,xh,xr,A,D,S,R}; }
+function cardEnv(d){ const W=300,H=170, a=envCurve({a:pv(d,P.vcaA),d:pv(d,P.vcaD),s:pv(d,P.vcaS),r:pv(d,P.vcaR)},10,20,280,100), f=envCurve({a:pv(d,P.fA),d:pv(d,P.fD),s:pv(d,P.fS),r:pv(d,P.fR)},10,20,280,100);
+  let s=`<svg viewBox="0 0 ${W} ${H}"><rect x="10" y="20" width="280" height="100" class="cbg"/>`;
+  s+=`<rect x="10" y="20" width="${(a.xa-10).toFixed(1)}" height="100" fill="#30d158" opacity=".08"/><rect x="${a.xa.toFixed(1)}" y="20" width="${(a.xd-a.xa).toFixed(1)}" height="100" fill="#5ac8fa" opacity=".07"/><rect x="${a.xd.toFixed(1)}" y="20" width="${(a.xh-a.xd).toFixed(1)}" height="100" fill="#ffd60a" opacity=".06"/><rect x="${a.xh.toFixed(1)}" y="20" width="${(a.xr-a.xh).toFixed(1)}" height="100" fill="#bf5af2" opacity=".07"/>`;
+  s+=`<path d="${f.path}" stroke="#e8b04a" stroke-width="2" fill="none" stroke-dasharray="5 3"/><path d="${a.path}" stroke="#30d158" stroke-width="2.6" fill="none"/>`;
+  const lab=(x1,x2,t,col)=>`<text x="${((x1+x2)/2).toFixed(1)}" y="14" text-anchor="middle" class="cl" fill="${col}">${t}</text>`;
+  s+=lab(10,a.xa,"A","#30d158")+lab(a.xa,a.xd,"D","#5ac8fa")+lab(a.xd,a.xh,"S","#ffd60a")+lab(a.xh,a.xr,"R","#bf5af2");
+  s+=`<line x1="10" y1="132" x2="${a.xh.toFixed(1)}" y2="132" stroke="#e8e8e8" stroke-width="3"/><text x="12" y="146" class="cs">tecla apretada</text><text x="${Math.min(286,a.xh+4).toFixed(1)}" y="146" class="cs" text-anchor="${a.xh>230?"end":"start"}">${a.xh>230?"sueltas →":"sueltas"}</text>`;
+  s+=`<text x="10" y="164" class="cs">Ataque ${secs(a.A)} · Caída ${secs(a.D)} · Sostén ${Math.round(a.S*100)}% · Cola ${secs(a.R)}</text></svg>`;
+  const feel=a.A>0.3?"entra lento (como un pad)":a.A>0.05?"entra suave":"golpe inmediato"; const tail=a.R>1.5?"y deja una cola larga":a.R>0.3?"y se apaga con suavidad":"y se corta al soltar"; const pl=a.S<0.15?" Sin sostén: suena como una nota punteada (pluck).":"";
+  return {t:"Envolventes: cómo nace y muere cada nota",svg:s,p:`Verde = volumen, ámbar punteado = filtro. La nota ${feel} ${tail}.${pl}`}; }
+function cardMotion(d){ const v=k=>pv(d,P[k]); const W=300,H=170, sh=Math.min(4,v("lfoShape")), hz=lfoHz(v("lfoFreq")), amt=v("lfoAmt")/255;
+  const pts=[]; for(let i=0;i<=120;i++){ pts.push([10+i/120*280,45-lfoWave(sh,i/120*Math.min(8,Math.max(1,hz)))*28*Math.max(0.15,amt)]); }
+  const dest=[]; if(amt>0.01){ if(v("lfoF1")||v("lfoF2")) dest.push(["Vibrato","mueve la afinación","#5ac8fa"]); if(v("lfoPW")) dest.push(["PWM","ensancha el pulso","#64d2ff"]); if(v("lfoAmp")) dest.push(["Trémolo","mueve el volumen","#30d158"]); if(v("lfoLP")||v("lfoHP")) dest.push(["Wah","mueve el filtro","#ff9f0a"]); }
+  const pm=[]; const pf=Math.abs(v("pmFilt")-127)/127, po=v("pmOsc2")/254; if(pf>0.02||po>0.02){ if(v("pmF1")) pm.push(po>0.02?"Osc 2 → Osc 1: metálico (FM)":"Env → Osc 1: «zap» al atacar"); if(v("pmShape")) pm.push("→ forma Osc 1"); if(v("pmPW")) pm.push("→ pulso Osc 1"); if(v("pmLP")||v("pmHP")) pm.push("→ filtro"); }
+  const at=[]; const aa=(v("atAmt")-127)/127; if(Math.abs(aa)>0.02){ if(v("atF1")||v("atF2")) at.push("afinación"); if(v("atLP")||v("atHP")) at.push("filtro"); if(v("atVCA")) at.push("volumen"); if(v("atLFO")) at.push("LFO"); }
+  let s=`<svg viewBox="0 0 ${W} ${H}"><rect x="10" y="10" width="280" height="70" class="cbg"/><path d="${pth(pts)}" stroke="#5ac8fa" stroke-width="2.2" fill="none" opacity="${amt>0.01?1:0.35}"/><text x="14" y="24" class="cs">LFO · ${LFO_SH[sh]} · ${hz<10?hz.toFixed(2):Math.round(hz)} Hz</text>`;
+  dest.slice(0,4).forEach(([n,t,col],i)=>{ s+=`<rect x="${10+i*70}" y="88" width="66" height="30" rx="8" fill="${col}" opacity=".18"/><text x="${43+i*70}" y="103" text-anchor="middle" class="cl" fill="${col}">${n}</text><text x="${43+i*70}" y="114" text-anchor="middle" class="cs">${t}</text>`; });
+  if(!dest.length) s+=`<text x="12" y="106" class="cs">LFO sin efecto en este sonido</text>`;
+  s+=`<text x="10" y="138" class="cl" fill="#ff375f">POLY MOD</text><text x="80" y="138" class="cs">${esc(pm.join(" · ")||"apagada")}</text><text x="10" y="160" class="cl" fill="#bf5af2">PRESIÓN</text><text x="80" y="160" class="cs">${esc(at.length?(aa>0?"sube ":"baja ")+at.join(", "):"sin efecto")}</text></svg>`;
+  return {t:"Movimiento: lo que cambia mientras suena",svg:s,p:[dest.map(x=>x[0]).join(", "),pm.join("; "),at.length?"aftertouch: "+at.join(", "):""].filter(Boolean).join(" · ")||"Sonido estático: nada lo modula."}; }
+function cardArp(d){ const v=k=>pv(d,P[k]); const W=300,H=170, on=v("arpOn")===1, seq=v("seqOn")===1, mode=v("arpMode"), rng=v("arpRange")+1, ts=(L.timeSig[v("arpTime")]||"8th"), bpm=v("bpm");
+  let s=`<svg viewBox="0 0 ${W} ${H}"><rect x="10" y="10" width="280" height="120" class="cbg"/>`;
+  for(let i=0;i<=16;i++) s+=`<line x1="${10+i*17.5}" y1="10" x2="${10+i*17.5}" y2="130" class="cgl"/>`;
+  if(on){ const ch=[0,4,7]; let seqN=[]; for(let o=0;o<rng;o++) ch.forEach(n=>seqN.push(n+12*o)); if(mode===1) seqN.reverse(); if(mode===2) seqN=seqN.concat(seqN.slice(1,-1).reverse()); const notes=[]; for(let i=0;i<16;i++) notes.push(mode===3?seqN[(i*7+3)%seqN.length]:seqN[i%seqN.length]);
+    const mx=12*rng+7; notes.forEach((n,i)=>{ const y=125-n/mx*105; s+=`<rect x="${12+i*17.5}" y="${(y-7).toFixed(1)}" width="14" height="8" rx="2" fill="#30d158"/>`; }); s+=`<text x="12" y="146" class="cs">Acorde de ejemplo Do-Mi-Sol · ${L.arpMode[mode]||mode} · ${rng} oct · ${ts} · ${bpm} BPM</text>`; }
+  else s+=`<text x="150" y="66" text-anchor="middle" class="cl" fill="#8e8e93">Arpegiador apagado</text><text x="150" y="84" text-anchor="middle" class="cs">${seq?"El secuenciador está activo: toca la secuencia guardada":"Las notas suenan tal como las tocas"}</text>`;
+  s+="</svg>"; return {t:"Arpegiador y secuencia",svg:s,p:on?`Al mantener un acorde, el Prophet toca sus notas una tras otra (${L.arpMode[mode]||mode}), a ${bpm} BPM en ${ts}.`:seq?"Secuenciador activo.":"Sin arpegiador ni secuencia."}; }
+function cardVoices(d){ const v=k=>pv(d,P[k]); const W=300,H=170, uni=v("uniOn")===1, uv=v("uniMode"), glide=v("glideOn")===1, gr=v("glideRate")/127;
+  let s=`<svg viewBox="0 0 ${W} ${H}">`; for(let i=0;i<6;i++){ const x=14+i*46, used=uni?(uv>=6||i<=uv):true; const dy=uni&&used?(i-2.5)*3*(v("slop")/127+0.3):0;
+    s+=`<rect x="${x}" y="${18+dy}" width="38" height="60" rx="8" fill="${used?(uni?"#ff6a3d":"#2c2c31"):"#18181b"}" opacity="${used?1:0.5}"/><text x="${x+19}" y="${54+dy}" text-anchor="middle" class="cl" fill="${uni&&used?"#1a0b05":"#e8e8e8"}">${i+1}</text>`; }
+  s+=`<text x="14" y="98" class="cs">${uni?`UNISON: ${uv>=6?"acorde":(uv+1)+" voces"} tocan la misma nota → sonido gordo, monofónico`:"Polifónico: 6 notas a la vez (una voz por tecla)"}</text>`;
+  s+=`<rect x="14" y="110" width="272" height="44" class="cbg"/>`; if(glide){ const x2=14+30+gr*200; s+=`<path d="M14 145L44 145C${(44+x2)/2} 145 ${(44+x2)/2} 118 ${x2} 118L286 118" stroke="#5ac8fa" stroke-width="2.4" fill="none"/><text x="20" y="166" class="cs">Glide: desliza la afinación de una nota a la siguiente</text>`; } else s+=`<path d="M14 145L120 145L120 118L286 118" stroke="#8e8e93" stroke-width="2" fill="none"/><text x="20" y="166" class="cs">Sin glide: salta directo de nota a nota</text>`;
+  return {t:"Voces, unison y glide",svg:s+"</svg>",p:`${uni?"Unison activo":"Polifónico"} · modo de teclado ${L.keyMode[v("keyMode")]||v("keyMode")}${glide?" · glide activo":""}`}; }
+function fxSvg(name,mix,x,y,w,h,col){ const k=FX_KIND[name]||"off"; let s=`<rect x="${x}" y="${y}" width="${w}" height="${h}" class="cbg"/>`; const m=mix/127;
+  if(k==="delay") for(let i=0;i<7;i++){ const hh=(h-14)*Math.pow(0.65,i)*(i?m+0.15:1); s+=`<rect x="${x+8+i*(w-16)/7}" y="${y+h-6-hh}" width="${(w-16)/7-6}" height="${hh}" rx="2" fill="${col}" opacity="${i?0.75:1}"/>`; }
+  else if(k==="chorus"){ for(let j=0;j<3;j++){ const pts=[]; for(let i=0;i<=60;i++) pts.push([x+6+i/60*(w-12),y+h/2+Math.sin(i/60*Math.PI*4+j*0.7)*(h*0.25)*(j?m+0.2:1)]); s+=`<path d="${pth(pts)}" stroke="${col}" fill="none" stroke-width="1.8" opacity="${j?0.5:1}"/>`; } }
+  else if(k==="phaser"){ const pts=[]; for(let i=0;i<=80;i++){ const t=i/80; pts.push([x+6+t*(w-12),y+12+(1-Math.abs(Math.sin(t*Math.PI*3))*(m*0.8+0.2))*(h-24)]); } s+=`<path d="${pth(pts)}" stroke="${col}" fill="none" stroke-width="2"/>`; }
+  else if(k==="reverb"){ for(let i=0;i<70;i++){ const t=i/70, hh=(h-12)*Math.exp(-t*3)*(0.5+((i*37)%10)/20)*(m+0.25); s+=`<rect x="${x+6+t*(w-12)}" y="${y+h-6-hh}" width="2" height="${hh}" fill="${col}" opacity=".8"/>`; } }
+  else if(k==="ring"){ const pts=[]; for(let i=0;i<=80;i++){ const t=i/80*6.28*3; pts.push([x+6+i/80*(w-12),y+h/2-Math.sin(t)*Math.sin(t*3.3)*(h*0.35)]); } s+=`<path d="${pth(pts)}" stroke="${col}" fill="none" stroke-width="1.8"/>`; }
+  else s+=`<line x1="${x+6}" y1="${y+h/2}" x2="${x+w-6}" y2="${y+h/2}" stroke="#55575d" stroke-width="2"/>`;
+  return s; }
+function cardFx(d){ const v=k=>pv(d,P[k]); const on=!!v("fxOn"), a=FX_NAMES[v("fxASel")]||"OFF", b=FX_NAMES[v("fxBSel")]||"OFF";
+  let s=`<svg viewBox="0 0 300 170"><text x="10" y="16" class="cl" fill="#bf5af2">A · ${esc(FX_FULL[a]||a)}</text>${fxSvg(on?a:"OFF",v("fxAMix"),10,22,280,52,"#bf5af2")}<text x="10" y="94" class="cl" fill="#5e5ce6">B · ${esc(FX_FULL[b]||b)}</text>${fxSvg(on?b:"OFF",v("fxBMix"),10,100,280,52,"#7d7bff")}<text x="10" y="166" class="cs">${on?`Mix A ${Math.round(v("fxAMix")/1.27)}% · Mix B ${Math.round(v("fxBMix")/1.27)}%`:"Efectos apagados (botón FX ON/OFF)"}</text></svg>`;
+  const desc={delay:"repite la nota como eco",chorus:"duplica y ondula: más ancho",phaser:"barre el sonido como un remolino",reverb:"le da espacio/sala",ring:"timbre metálico, campana",off:"sin efecto"};
+  return {t:"Efectos: el espacio y el color final",svg:s,p:on?`A: ${desc[FX_KIND[a]||"off"]} · B: ${desc[FX_KIND[b]||"off"]}`:"Efectos apagados."}; }
+function buildCardsHtml(d){ const cs=[cardSources(d),cardFilter(d),cardEnv(d),cardMotion(d),cardArp(d),cardVoices(d),cardFx(d)];
+  return `<div class="bcards">${cs.map((c,i)=>`<div class="bcard"><div class="bch"><span class="bcn">${i+1}</span><b>${c.t}</b></div>${c.svg}<p>${c.p}</p></div>`).join("")}</div>`; }
 function stageHtml(){
   const s=stageSlot(), d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
   const ins=STG.src==="mic"&&STG.inputs&&STG.inputs.length?`<select id="stIn" title="Entrada de audio">${STG.inputs.map(x=>`<option value="${esc(x.deviceId)}" ${x.deviceId===STG.inId||(!STG.inId&&x.deviceId==="default")?"selected":""}>${esc((x.label||"Entrada").replace(/\s*\(.*\)$/,""))}</option>`).join("")}</select>`:"";
   if(STG.arch) return `<section class="stage arch${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
-   <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">Cómo fluye la señal y quién modula qué</span></div><span class="sled" id="stLed"></span></div>
-   <div class="ssrc"><button data-v2="snd">Sonido</button><button class="act" data-v2="arch">Arquitectura</button><button class="sfull" id="stFull">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
-   <div class="sbox sarch"><div id="archSvg"></div></div></div><div class="cheek"></div></section>`;
+   <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">Paso a paso, de la fuente al efecto final</span></div><span class="sled" id="stLed"></span></div>
+   <div class="ssrc"><button data-v2="snd">Sonido</button><button class="act" data-v2="arch">Cómo se construye</button><button class="sfull" id="stFull">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
+   <div class="sbox sarch"><div class="archtabs"><button class="${STG.archMode!=="map"?"act":""}" data-am="cards">Paso a paso</button><button class="${STG.archMode==="map"?"act":""}" data-am="map">Mapa de la señal</button></div><div id="archSvg"></div></div></div><div class="cheek"></div></section>`;
   return `<section class="stage${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
    <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><button class="smem" id="stMem" title="Lo que la app ha aprendido de tu Prophet real"><i></i>Memoria <b>${MEM.obs.length}</b></button><span class="satmini" id="stAtMini" title="Aftertouch: presión de la tecla"><i></i><small>AT</small></span><span class="sled" id="stLed"></span></div>
    <div class="sbox sspec"><div class="slab"><span>Sonido en vivo · frecuencias</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
    <div class="sbox sscope"><div class="slab"><span>Onda</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
    <div class="sbox senv"><div class="slab"><span>Envolventes</span><b><i class="kf"></i>Filtro <i class="ka"></i>Volumen</b></div><canvas id="cvEnv"></canvas></div>
-   <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button data-v2="arch" title="Ver osciladores, mezcla, filtros, efectos, LFO, poly mod y aftertouch">Arquitectura</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
+   <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
    ${STG.full?`<div class="sbox sgram"><div class="slab"><span>Historia del sonido · espectrograma</span><b>tiempo →</b></div><canvas id="cvGram"></canvas></div>
    <div class="sbox svoices"><div class="slab"><span>6 voces del Prophet</span><b>nivel por nota</b></div><canvas id="cvVoices"></canvas></div>
    <div class="sbox slfo"><div class="slab"><span>LFO</span><b id="stLfo"></b></div><canvas id="cvLfo"></canvas></div>
@@ -2111,6 +2227,7 @@ function stageHtml(){
 function wireStage(){ const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ b.textContent="Pidiendo permiso…"; if(!await startMic()){ refreshStage(); return; } await listInputs(); } STG.src=v; refreshStage(); });
   document.querySelectorAll("[data-v2]").forEach(b=>b.onclick=()=>{ STG.arch=b.dataset.v2==="arch"; refreshStage(); });
   const si=document.getElementById("stIn"); if(si) si.onchange=async()=>{ STG.inId=si.value; try{ localStorage.setItem("p6AudioIn",si.value); }catch(e){} if(STG.audio){ try{ STG.audio.st.getTracks().forEach(t=>t.stop()); STG.audio.ac.close(); }catch(e){} STG.audio=null; } if(await startMic()) toast("Entrada de audio: "+(si.options[si.selectedIndex]||{}).text); refreshStage(); };
+  document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{ STG.archMode=b.dataset.am; refreshStage(); });
   if(STG.arch) drawArch(true); kickStage(); }
 async function startMic(){ try{ if(STG.inId==null){ try{ STG.inId=localStorage.getItem("p6AudioIn")||""; }catch(e){ STG.inId=""; } } const cons=id=>({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}}); let st;
   try{ st=await navigator.mediaDevices.getUserMedia(cons(STG.inId)); }catch(e1){ if(e1&&e1.name==="OverconstrainedError"||e1.name==="NotFoundError"){ STG.inId=""; st=await navigator.mediaDevices.getUserMedia(cons("")); } else throw e1; } await listInputs();
