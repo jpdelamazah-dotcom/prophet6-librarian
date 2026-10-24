@@ -914,7 +914,7 @@ function onMsg(e){
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
     else if(cc===38){ const param=(n.msb<<7)|n.lsb, val=(n.vmsb<<7)|v;
       if(param===1088){ state.seqPlaying=!!val; schedulePanelIfLive(); return; }
-      if(param<236){ if(state.learn){ /* modo aprender: se ignora */ } else { if(!state.editBuffer) state.editBuffer=new Uint8Array(UNPACKED); state.editBuffer[idx(param)]=val&0xFF; STG.edAt=Date.now(); kickStage(); if(state.view==="panel"&&state.panelSrc==="edit") schedulePanel(); } } }
+      if(param<236){ if(state.learn){ /* modo aprender: se ignora */ } else { if(!state.editBuffer){ const base=currentData(state.curProg??state.sel); state.editBuffer=base?Uint8Array.from(base):new Uint8Array(UNPACKED); } state.editBuffer[idx(param)]=val&0xFF; STG.edAt=Date.now(); kickStage(); if(state.view==="panel"&&state.panelSrc==="edit") schedulePanel(); } } }
     return; }
   if(d[0]!==0xF0||d[1]!==DSI||d[2]!==P6) return;
   const t=d[3];
@@ -1912,10 +1912,11 @@ async function startMic(){ try{ const st=await navigator.mediaDevices.getUserMed
 function autoPitch(buf,sr){ let best=-1,bc=0; const N=buf.length/2; let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i]; if(Math.sqrt(rms/N)<0.01) return null;
   for(let lag=Math.floor(sr/2000);lag<Math.floor(sr/30);lag++){ let c=0; for(let i=0;i<N;i++) c+=buf[i]*buf[i+lag]; if(c>bc){bc=c;best=lag;} } return best>0?sr/best:null; }
 function fitCanvas(cv){ if(!cv) return null; const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1; if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){ cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); } const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); return {g,w:r.width,h:r.height}; }
-function grid(g,w,h){ g.clearRect(0,0,w,h); g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1; for(let x=0;x<=w;x+=w/8){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); } for(let y=0;y<=h;y+=h/4){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } }
+function grid(g,w,h){ g.clearRect(0,0,w,h); if(!(w>8&&h>8)) return; g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1; for(let x=0;x<=w;x+=w/8){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); } for(let y=0;y<=h;y+=h/4){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } }
 function kickStage(){ if(!STG.raf) STG.raf=requestAnimationFrame(drawStage); }
 function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if(!sc||document.hidden) return; const now=performance.now(), d=stageData();
   const A=fitCanvas(sc), B=fitCanvas(document.getElementById("cvSpec")), C=fitCanvas(document.getElementById("cvEnv")); let busy=false;
+  if(!A||!B||!C||A.w<20||B.w<40||C.w<20||A.h<10||B.h<20||C.h<10){ STG.raf=0; setTimeout(kickStage,300); return; }
   const led=document.getElementById("stLed");
   if(STG.src==="mic"&&STG.audio){ const {an,buf,fb,ac}=STG.audio; an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(fb);
     let z=0; for(let i=1;i<buf.length/2;i++){ if(buf[i-1]<0&&buf[i]>=0){ z=i; break; } }
