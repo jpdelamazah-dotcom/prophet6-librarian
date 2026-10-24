@@ -744,6 +744,19 @@ body.stagefull{overflow:hidden}
 .stage.arch.full .bcards{grid-template-columns:repeat(auto-fill,minmax(360px,1fr))}
 
 .crecs{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}.crec{display:flex;flex-direction:column;align-items:flex-start;padding:7px 12px;border-radius:10px}.crec small{font-size:11px;color:#9b9ba1}
+
+.aibox{background:#1b1c22;border:1px solid #2c2d38;border-radius:14px;padding:12px 14px;margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.aihead{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}.aihead a{color:#6aa1ff}
+.aidrop{position:relative;border:1.5px dashed #3a3b46;border-radius:12px;min-height:84px;display:flex;align-items:center;justify-content:center;color:#9b9ba1;font-size:13px;cursor:pointer;padding:8px;text-align:center}
+.aidrop.over{border-color:#6aa1ff;background:#1e2433}.aidrop img{max-height:180px;max-width:100%;border-radius:8px}.aidrop button{position:absolute;top:6px;right:6px;padding:2px 8px}
+#aiTxt{width:100%;box-sizing:border-box;resize:vertical;font:inherit;border-radius:8px;padding:8px}
+
+.keybtn{height:30px;padding:0 10px;font-size:13px}
+.keybody{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px}
+.kres{display:flex;justify-content:space-between;gap:16px;align-items:flex-end;background:#1b1c22;border:1px solid #2c2d38;border-radius:12px;padding:12px 14px}.kres small{display:block;color:#8e8e93;font-size:11px}.kres b{font:700 30px "IBM Plex Sans",sans-serif;color:#ff6a3d}.kres .note{display:block}.kconf b{font:600 24px "IBM Plex Mono",monospace;color:#e8e8e8}
+.kkeys{width:100%;max-width:520px;display:block}.kkeys .kkl{font:600 8px "IBM Plex Sans",sans-serif;fill:#3a1a0b}
+.kchords{display:flex;flex-wrap:wrap;gap:6px}.kchords span{display:flex;flex-direction:column;align-items:center;background:#26272c;border-radius:8px;padding:6px 10px;min-width:48px}.kchords b{font-size:15px}.kchords small{color:#9b9ba1;font-size:10.5px}
+.kbars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:90px;align-items:end}.kbar{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px}.kbar i{display:block;width:70%;background:linear-gradient(#ff6a3d,#ffd60a);border-radius:3px;min-height:2px}.kbar span{font-size:10px;color:#9b9ba1}
 </style>
 </head>
 <body>
@@ -765,7 +778,7 @@ body.stagefull{overflow:hidden}
   <div class="mode" id="modeSeg" title="Qué puede hacer la app con tu Prophet">
     <button data-mode="ver">Solo ver</button><button data-mode="escuchar">Escuchar</button><button data-mode="editar">Editar</button>
   </div>
-  <button class="inspbtn act" id="btnInsp" title="Mostrar u ocultar el panel derecho (tecla I)"><svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="16" height="12" rx="2"/><line x1="11.5" y1="1" x2="11.5" y2="13"/></svg></button>
+  <button class="keybtn" id="btnKey" title="¿En qué tonalidad está lo que suena?">♪ Tono</button><button class="inspbtn act" id="btnInsp" title="Mostrar u ocultar el panel derecho (tecla I)"><svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="16" height="12" rx="2"/><line x1="11.5" y1="1" x2="11.5" y2="13"/></svg></button>
   <div class="conn"><span class="led" id="led"></span><span id="status">Desconectado</span><button class="pri" id="btnConnect">Conectar</button></div>
 </header>
 <div id="progress"><div id="bar"></div></div>
@@ -793,6 +806,10 @@ body.stagefull{overflow:hidden}
         <input type="number" id="delayMs" value="120" min="20" max="2000" style="width:80px">
       </div>
       <div class="setcard"><h3>Registro de actividad</h3><div id="log"></div></div>
+      <div class="setcard"><h3>Botón «Escuchar»</h3><p class="note">Al pulsar ▶ o «Escuchar», el Prophet cambia a ese sonido y la app toca un acorde corto (o una nota en bajos) para que lo oigas sin tocar el teclado. Requiere el modo «Escuchar» o «Editar».</p><label class="note"><input type="checkbox" id="setPrev"> Tocar notas de prueba al escuchar</label></div>
+      <div class="setcard"><h3>Claude dentro de la app</h3><p class="note">Para crear recetas desde la pestaña Recetas (pegando una captura o describiendo un sonido), la app se conecta a Claude con <b>tu clave de API de Anthropic</b>. Se obtiene en console.anthropic.com → API Keys y se cobra aparte de tu plan de claude.ai. La clave queda guardada solo en este navegador.</p>
+        <div class="row"><input type="password" id="aiKey" placeholder="sk-ant-…" autocomplete="off" style="flex:1;min-width:240px"><select id="aiModel"><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (rápido, económico)</option><option value="claude-opus-5-5">Claude Opus 5.5 (más preciso)</option></select></div>
+        <div class="row"><button class="pri" id="aiSave">Guardar y probar</button><button id="aiDel">Quitar clave</button><span class="note" id="aiSetStat"></span></div></div>
       <div class="setcard"><h3>Librería local</h3><p class="note">Borra lo leído y guardado en este navegador. No afecta al Prophet.</p><button id="btnWipe" class="warn">Borrar librería local</button></div>
     </div></div>
     <div id="pendbar"><span id="dirtyCount"></span><span class="sp"></span><button id="btnRevert" disabled>Descartar</button><button id="btnWrite" class="pri" disabled>Enviar al Prophet</button></div>
@@ -982,7 +999,7 @@ function isReadRequest(b){ return b[0]===0xF0&&b[1]===DSI&&b[2]===P6&&(b[3]===0x
 let blockedNote=0;
 function send(b){ if(!state.out) throw new Error("Sin salida MIDI");
   const isPC=((b[0]&0xF0)===0xC0)||(((b[0]&0xF0)===0xB0)&&(b[1]===0||b[1]===32));
-  if(state.safe&&!isReadRequest(b)&&!(state.allowPC&&isPC)&&!(state.allowPC&&state.bpmSending&&(b[0]&0xF0)===0xB0)){ if(Date.now()-blockedNote>1500){ blockedNote=Date.now(); toast(isPC?"Estás en «Solo ver». Para escuchar sonidos desde la app, elige «Escuchar» arriba a la derecha.":"Estás en modo «"+(state.allowPC?"Escuchar":"Solo ver")+"»: no se envió nada al Prophet. Para editar, elige «Editar» arriba a la derecha."); } return false; }
+  if(state.safe&&!isReadRequest(b)&&!(state.allowPC&&isPC)&&!(state.allowPC&&state.bpmSending&&(b[0]&0xF0)===0xB0)&&!(state.allowPC&&state.previewing&&((b[0]&0xF0)===0x90||(b[0]&0xF0)===0x80||((b[0]&0xF0)===0xB0&&b[1]===123)))){ if(Date.now()-blockedNote>1500){ blockedNote=Date.now(); toast(isPC?"Estás en «Solo ver». Para escuchar sonidos desde la app, elige «Escuchar» arriba a la derecha.":"Estás en modo «"+(state.allowPC?"Escuchar":"Solo ver")+"»: no se envió nada al Prophet. Para editar, elige «Editar» arriba a la derecha."); } return false; }
   state.out.send(b); return true; }
 function onMsg(e){
   const d=e.data;
@@ -1050,7 +1067,17 @@ function audition(slot){
   if(state.bpmLock) setTimeout(()=>sendBpm(state.bpmLockVal||120),250);
   if(state.allowPC||!state.safe){ const old=state.curProg; state.curProg=slot; schedulePanelIfLive(); if(old!=null) renderSlot(old); renderSlot(slot); }
   showLcd(slotLabel(slot),displayName(slot),catOf(slot)||"Not Assigned");
+  if(!state.pending.has(slot)) previewSlot(slot,ch);
 }
+async function previewSlot(slot,ch){ const my=(state.prevTok=(state.prevTok||0)+1); await sleep(450); if(my!==state.prevTok) return;
+  const r=state.out&&!state.busy&&!state.waiter?await readEdit():null; const want=(getName((currentData(slot)||[]))||"").trim();
+  if(r&&want&&getName(r.data).trim()!==want){ toast(`El Prophet no cambió al ${slotLabel(slot)}. Revisa en Globales que MIDI Channel sea «All» o igual al canal de la app (Ajustes).`); return; }
+  if(r){ state.editBuffer=r.data; STG.edAt=Date.now(); }
+  let pv0=true; try{ pv0=localStorage.getItem("p6PreviewNotes")!=="0"; }catch(e){} if(!pv0||my!==state.prevTok) return;
+  const d=currentData(slot), cat=(catOf(slot)||"").toLowerCase(), mono=d&&(pv(d,P.uniOn)===1), arp=d&&pv(d,P.arpOn)===1;
+  const notes=/bass|bajo/.test(cat)?[36]:mono?[48]:[48,52,55], hold=arp?3000:1500;
+  state.previewing=true; notes.forEach(n=>{ send([0x90|ch,n,90]); stageNote(n,90,true); });
+  await sleep(hold); notes.forEach(n=>{ send([0x80|ch,n,0]); stageNote(n,0,true); }); state.previewing=false; }
 async function writePending(){
   if(state.safe){ toast("Para enviar cambios al Prophet, elige «Editar» arriba a la derecha."); return; }
   const items=[...state.pending.entries()].filter(([s])=>isUser(s)).sort((a,b)=>a[0]-b[0]); if(!items.length) return;
@@ -1283,7 +1310,8 @@ function renderNowBar(){
   $("#nbPlay").onclick=()=>{ if(state.sel==null) return toast("Selecciona un sonido."); if(!state.out) return toast("Conecta primero el Prophet."); audition(state.sel); };
   $("#nbFav").onclick=()=>{ if(s==null) return; state.meta[s]={...m,fav:!m.fav}; save(); renderSlot(s); renderStats(); renderNowBar(); };
   $("#nbPanel").onclick=()=>openPanel(s);
-  const bv=$("#bpmV"); const setB=v=>{ const r=sendBpm(v); if(r){ bv.value=r; if(state.bpmLock) state.bpmLockVal=r; save(); renderNowBar(); } };
+  const bv=$("#bpmV"); const setB=v=>{ const r=sendBpm(v); if(r){ bv.value=r; if(state.bpmLock) state.bpmLockVal=r; save(); renderNowBar(); clearTimeout(state.bpmChk); state.bpmChk=setTimeout(async()=>{ const rd=await readEdit(); if(!rd) return; const got=pv(rd.data,P.bpm), uses=pv(rd.data,P.arpOn)===1||pv(rd.data,P.seqOn)===1||pv(rd.data,P.fxASync)===1||pv(rd.data,P.fxBSync)===1||pv(rd.data,P.lfoSync)===1;
+      toast(got===r?`✓ El Prophet está a ${got} BPM.${uses?"":" Ojo: este sonido no usa tempo (sin arpegiador, secuencia ni efectos sincronizados), así que no vas a notar el cambio."}`:`No pude confirmar el cambio: el Prophet sigue informando ${got} BPM. Si el arpegiador no cambia de velocidad, revisa Globales → Param Rcv = nr.`); },500); } };
   $("#bpmM").onclick=()=>setB(+bv.value-1); $("#bpmP").onclick=()=>setB(+bv.value+1); bv.onchange=()=>setB(+bv.value);
   $("#bpmL").onchange=e=>{ state.bpmLock=e.target.checked; state.bpmLockVal=+bv.value; save(); if(state.bpmLock) setB(+bv.value); else renderNowBar(); };
   const bs=$("#bpmSave"); if(bs) bs.onclick=()=>{ const v=+bv.value; const x=Uint8Array.from(currentData(s)); x[idx(P.bpm)]=v; state.pending.set(s,x); cleanPending(s); save(); render(); toast(`BPM ${v} guardado en ${slotLabel(s)} (pendiente).`); };
@@ -1794,6 +1822,44 @@ const RECIPE_EXAMPLE={nombre:"Ejemplo Pad Suave",descripcion:"Pad cálido de dos
 function parseRecipe(txt){ const j=JSON.parse(txt); const p=j.parametros||j.params||{}; const ok=[],bad=[];
   for(const [k,v] of Object.entries(p)){ if(P[k]==null){ bad.push(k); continue; } const r=RANGE[k]||[0,255]; const n=Math.round(+v); if(isNaN(n)){ bad.push(k); continue; } ok.push([k,Math.max(r[0],Math.min(r[1],n))]); }
   return {nombre:(j.nombre||j.name||"").slice(0,20),descripcion:j.descripcion||"",ok,bad}; }
+/* ================= CLAUDE DENTRO DE LA APP (API de Anthropic) ================= */
+const AI={key:null,model:"claude-sonnet-5-5"}; try{ AI.key=localStorage.getItem("p6ClaudeKey"); AI.model=localStorage.getItem("p6ClaudeModel")||AI.model; }catch(e){}
+function myRecipes(){ try{ return JSON.parse(localStorage.getItem("p6MyRecipes")||"[]"); }catch(e){ return []; } }
+function saveMyRecipes(a){ try{ localStorage.setItem("p6MyRecipes",JSON.stringify(a)); }catch(e){} }
+function recipeSchemaText(){ const lines=Object.keys(RANGE).filter(k=>!["seqOn","seqLen"].includes(k)).map(k=>`${k} [${RANGE[k][0]}-${RANGE[k][1]}]${BIPOLAR.has(k)?" (bipolar, 127 = centro/cero)":""} = ${learnLabel(P[k])}`);
+  return lines.join("\n"); }
+function aiSystem(){ return `Eres un experto en síntesis y diseño de sonido para el Sequential Prophet-6 (analógico, 6 voces, 2 VCO + sub + ruido, filtros pasa-altos y pasa-bajos de 2 y 4 polos, 2 envolventes ADSR, LFO, Poly Mod, aftertouch, efectos digitales A y B, arpegiador).
+El usuario te muestra una canción, artista, captura o descripción. Analiza qué sonidos (capas) tiene y diseña recetas para recrearlos en el Prophet-6.
+Responde SOLO con JSON válido, sin texto fuera del JSON, con esta forma:
+{"analisis":"2-4 frases sobre el tema y sus sonidos","recetas":[{"nombre":"máx 20 caracteres ASCII","para":"canción/parte","descripcion":"qué suena y por qué esos ajustes","como_tocar":"consejos de interpretación","parametros":{...}}]}
+Incluye en "parametros" TODOS estos parámetros (valores enteros dentro del rango):
+${recipeSchemaText()}
+Notas: oscFreq 24 = Do2 (semitonos). osc shape: 0 triangular, 127 sierra, 254 pulso. lpFreq 0-164 (≈ 20 Hz a 20 kHz exponencial). Envolventes 0-127 (0 ≈ 2 ms, 64 ≈ 0.2 s, 127 ≈ 20 s). lfoFreq 0-254 (150 ≈ 5 Hz). lfoShape 0 Tri,1 Saw,2 RevSaw,3 Square,4 Random. Efecto A (fxASel 0-9): 0 off,1 BBD delay,2 delay digital,3 chorus,4-6 phaser,7 ring mod,8-9 flanger. Efecto B (fxBSel 0-13): lo mismo + 10 hall,11 room,12 plate,13 spring. uniOn 1 = unison (uniMode 0 = 1 voz, mono). keyMode 0-5. Si el instrumento original es acústico, haz la mejor aproximación analógica y dilo. Máximo 3 recetas.`; }
+async function imgToB64(file){ const url=URL.createObjectURL(file); const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+  const sc=Math.min(1,1400/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*sc); c.height=Math.round(img.height*sc); c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url);
+  return c.toDataURL("image/jpeg",0.85).split(",")[1]; }
+async function askClaude(text,imgB64){ if(!AI.key) throw new Error("NOKEY");
+  const content=[]; if(imgB64) content.push({type:"image",source:{type:"base64",media_type:"image/jpeg",data:imgB64}}); content.push({type:"text",text:text||"Crea la receta para el sonido de esta imagen."});
+  const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":AI.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:AI.model,max_tokens:6000,system:aiSystem(),messages:[{role:"user",content}]})});
+  const j=await r.json().catch(()=>({})); if(!r.ok) throw new Error((j.error&&j.error.message)||("HTTP "+r.status));
+  const txt=(j.content||[]).filter(c=>c.type==="text").map(c=>c.text).join("\n"); const m=txt.match(/\{[\s\S]*\}/); if(!m) throw new Error("Claude no devolvió una receta legible.");
+  return JSON.parse(m[0]); }
+function aiCardHtml(){ return `<div class="aibox"><div class="aihead"><b>Pídele un sonido a Claude</b><span class="note">${AI.key?`Conectado · ${esc(AI.model)}`:`<a href="#" id="aiGoSet">Conecta Claude en Ajustes</a> para usarlo aquí`}</span></div>
+   <div class="aidrop" id="aiDrop" tabindex="0">${STG.aiImg?`<img src="data:image/jpeg;base64,${STG.aiImg}" alt="Imagen para Claude"><button id="aiImgX" title="Quitar imagen">✕</button>`:`<span>Pega aquí una captura (⌘V), arrástrala o <u>elige un archivo</u></span>`}<input type="file" id="aiFile" accept="image/*" hidden></div>
+   <textarea id="aiTxt" rows="2" placeholder="Ej: el pad del comienzo, o «Spring 2 de Max Richter, los violines»">${esc(STG.aiTxt||"")}</textarea>
+   <div class="row"><button class="pri" id="aiGo" ${AI.key?"":"disabled"}>Crear receta con Claude</button><span class="note" id="aiStat"></span></div></div>`; }
+function wireAi(onDone){ const drop=$("#aiDrop"), fi=$("#aiFile"); if(!drop) return;
+  const take=async f=>{ if(!f||!/^image\//.test(f.type)) return toast("Eso no es una imagen."); STG.aiImg=await imgToB64(f); onDone(); };
+  drop.onclick=e=>{ if(e.target.id!=="aiImgX") fi.click(); }; fi.onchange=e=>take(e.target.files[0]);
+  drop.ondragover=e=>{ e.preventDefault(); drop.classList.add("over"); }; drop.ondragleave=()=>drop.classList.remove("over"); drop.ondrop=e=>{ e.preventDefault(); take(e.dataTransfer.files[0]); };
+  const x=$("#aiImgX"); if(x) x.onclick=e=>{ e.stopPropagation(); STG.aiImg=null; onDone(); };
+  const gs=$("#aiGoSet"); if(gs) gs.onclick=e=>{ e.preventDefault(); setView("settings"); };
+  $("#aiTxt").oninput=e=>{ STG.aiTxt=e.target.value; };
+  $("#aiGo").onclick=async()=>{ const st=$("#aiStat"), b=$("#aiGo"); b.disabled=true; st.textContent="Claude está escuchando… (unos 20-40 s)";
+    try{ const j=await askClaude(STG.aiTxt,STG.aiImg); const list=(j.recetas||[]).map(r=>({nombre:String(r.nombre||"Receta").replace(/[^\x20-\x7d]/g,"").slice(0,20),para:r.para||"",descripcion:[r.descripcion,r.como_tocar?("Cómo tocarlo: "+r.como_tocar):""].filter(Boolean).join(" "),parametros:r.parametros||{},t:Date.now()}));
+      if(!list.length) throw new Error("No vino ninguna receta."); const all=myRecipes().concat(list); saveMyRecipes(all); state.aiLast={analisis:j.analisis,n:list.length}; STG.aiImg=null; STG.aiTxt=""; onDone(); toast(`Claude creó ${list.length} receta(s). Elige una arriba para cargarla.`); }
+    catch(e){ st.textContent=e.message==="NOKEY"?"Falta conectar Claude en Ajustes.":/401|invalid x-api-key|authentication/i.test(e.message)?"La clave de API no es válida.":/Failed to fetch/i.test(e.message)?"Sin conexión a internet o bloqueado por el navegador.":"Error: "+e.message; b.disabled=false; } }; }
+document.addEventListener("paste",async e=>{ if(state.view!=="recipe") return; const it=[...(e.clipboardData||{}).items||[]].find(i=>i.type&&i.type.startsWith("image/")); if(!it) return; e.preventDefault(); STG.aiImg=await imgToB64(it.getAsFile()); renderRecipePage(); });
 const CLAUDE_RECIPES=[
  {nombre:"Spring2 Cuerdas",para:"Max Richter · Spring 2",descripcion:"Ensamble de cuerdas suave para los acordes sostenidos: dos sierras levemente desafinadas (vibran como una sección de violines), filtro tibio que se abre un poco al entrar, ataque de arco lento y cola larga. Chorus para ensanchar y reverb de sala. Con aftertouch, más vibrato. Tócalo en acordes, en el registro medio, suave.",
   parametros:{osc1Freq:24,osc1Sync:0,osc1Shape:127,osc1PW:127,osc1Lvl:115,osc2Freq:24,osc2Fine:134,osc2Shape:127,osc2PW:127,osc2Lvl:105,osc2Low:0,osc2Key:1,subLvl:0,noise:6,slop:45,
@@ -1818,13 +1884,15 @@ function renderRecipePage(){
   const pg=$("#recipePage"); const prev=state.recipeTxt||"";
   pg.innerHTML=`<div class="page"><div class="phead"><div><h2>Recetas</h2><p class="note">Una receta es un sonido escrito como lista de parámetros. Pégala aquí (por ejemplo, la que te dé Claude a partir de una canción), cárgala en el Prophet para tocarla y, si te gusta, guárdala como preset.</p></div></div>
    <div class="rgrid"><div>
-    <div class="crecs"><span class="note">Recetas de Claude:</span>${CLAUDE_RECIPES.map((r,i)=>`<button class="crec" data-crec="${i}"><b>${esc(r.nombre)}</b><small>${esc(r.para)}</small></button>`).join("")}</div>
+    ${aiCardHtml()}
+    ${state.aiLast&&state.aiLast.analisis?`<div class="callout2"><b>Claude:</b> ${esc(state.aiLast.analisis)}</div>`:""}
+    <div class="crecs"><span class="note">Recetas de Claude:</span>${CLAUDE_RECIPES.concat(myRecipes()).map((r,i)=>`<button class="crec" data-crec="${i}"><b>${esc(r.nombre)}</b><small>${esc(r.para||"")}</small></button>`).join("")}</div>
     <div class="steps3"><span><b>1</b> Pegar o abrir receta</span><span><b>2</b> Cargar en el Prophet</span><span><b>3</b> Guardar como preset</span></div>
     <textarea id="rcTxt" spellcheck="false" placeholder='{"nombre":"Mi sonido","parametros":{"osc1Freq":24, ...}}'>${esc(prev)}</textarea>
     <div class="row"><button id="rcOpen">Abrir archivo .json…</button><input type="file" id="rcFile" accept=".json" hidden><button id="rcEx">Ver ejemplo</button><button id="rcFrom">Receta del sonido actual</button><button id="rcCopy">Copiar</button></div>
    </div><div id="rcPrev" class="rprev"></div></div></div>`;
-  const ta=$("#rcTxt"); ta.oninput=()=>{ state.recipeTxt=ta.value; preview(); };
-  pg.querySelectorAll("[data-crec]").forEach(b=>b.onclick=()=>{ const r=CLAUDE_RECIPES[+b.dataset.crec]; ta.value=JSON.stringify({nombre:r.nombre,descripcion:r.descripcion,parametros:r.parametros},null,1); state.recipeTxt=ta.value; preview(); });
+  const ta=$("#rcTxt"); ta.oninput=()=>{ state.recipeTxt=ta.value; preview(); }; wireAi(()=>renderRecipePage());
+  pg.querySelectorAll("[data-crec]").forEach(b=>b.onclick=()=>{ const r=CLAUDE_RECIPES.concat(myRecipes())[+b.dataset.crec]; ta.value=JSON.stringify({nombre:r.nombre,descripcion:r.descripcion,parametros:r.parametros},null,1); state.recipeTxt=ta.value; preview(); });
   $("#rcOpen").onclick=()=>$("#rcFile").click(); $("#rcFile").onchange=async e=>{ ta.value=await e.target.files[0].text(); state.recipeTxt=ta.value; preview(); e.target.value=""; };
   $("#rcEx").onclick=()=>{ ta.value=JSON.stringify(RECIPE_EXAMPLE,null,1); state.recipeTxt=ta.value; preview(); };
   $("#rcFrom").onclick=async()=>{ if(state.out) await readEdit(); const d=state.editBuffer||(state.sel!=null?currentData(state.sel):null); if(!d) return toast("Lee primero un sonido.");
@@ -1854,8 +1922,12 @@ async function loadRecipe(r,fromBasic){
   for(const [k,v] of r.ok){ sendNRPN(P[k],v); await sleep(6); }
   if(r.nombre){ const nm=r.nombre.padEnd(20," "); for(let i=0;i<20;i++){ sendNRPN(236+i,nm.charCodeAt(i)); await sleep(4); } }
   bindPorts(); log(`Receta «${r.nombre}» cargada (${r.ok.length} parámetros).`);
-  await sleep(300); const rd=await readEdit();
-  toast(rd?"Receta cargada: tócala en el Prophet. Si no cambió el sonido, revisa GLOBALS → Param Rcv = NR.":"Receta enviada. No pude leer el resultado.");
+  await sleep(400); const rd=await readEdit(); setStatus("Conectado","ok");
+  if(!rd) return toast("Receta enviada, pero el Prophet no respondió para confirmarla.");
+  const nameOk=!r.nombre||getName(rd.data).trim()===r.nombre.slice(0,20).trim(); const chk=r.ok.filter(([k])=>mapped(P[k])); const hit=chk.filter(([k,v])=>pv(rd.data,P[k])===v).length;
+  if(nameOk&&hit>=chk.length*0.8) toast(`✓ El Prophet ya tiene «${r.nombre}». Tócala. Si te gusta: «Guardar como preset…».`);
+  else if(!nameOk&&hit<chk.length*0.3) confirmDlg(`<h3 style="margin-top:0">El Prophet no cambió</h3><p>No aceptó los parámetros. Revisa en <b>Globales</b> que Param Rcv esté en <b class="lcdtxt">nr</b>.</p>`);
+  else toast(`Receta cargada (${hit}/${chk.length} parámetros confirmados).`);
 }
 async function saveRecipeAsPreset(r){
   if(!state.out) return toast("Conecta primero el Prophet.");
@@ -2236,6 +2308,35 @@ function cardFx(d){ const v=k=>pv(d,P[k]); const on=!!v("fxOn"), a=FX_NAMES[v("f
   return {t:"Efectos: el espacio y el color final",svg:s,p:on?`A: ${desc[FX_KIND[a]||"off"]} · B: ${desc[FX_KIND[b]||"off"]}`:"Efectos apagados."}; }
 function buildCardsHtml(d){ const cs=[cardSources(d),cardFilter(d),cardEnv(d),cardMotion(d),cardArp(d),cardVoices(d),cardFx(d)];
   return `<div class="bcards">${cs.map((c,i)=>`<div class="bcard"><div class="bch"><span class="bcn">${i+1}</span><b>${c.t}</b></div>${c.svg}<p>${c.p}</p></div>`).join("")}</div>`; }
+/* ===== Detector de tonalidad (escucha lo que suena y dice en qué tono está) ===== */
+const KEY={chroma:new Float64Array(12),on:false,iv:null,t0:0,frames:0};
+const PC_ES=["Do","Do#","Re","Mib","Mi","Fa","Fa#","Sol","Lab","La","Sib","Si"];
+const KMAJ=[6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88], KMIN=[6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
+function corr(a,b){ const n=a.length; let ma=0,mb=0; for(let i=0;i<n;i++){ ma+=a[i]; mb+=b[i]; } ma/=n; mb/=n; let x=0,ya=0,yb=0; for(let i=0;i<n;i++){ const da=a[i]-ma, db=b[i]-mb; x+=da*db; ya+=da*da; yb+=db*db; } return x/Math.sqrt(ya*yb||1); }
+function keyRank(ch){ const out=[]; for(let t=0;t<12;t++){ const rot=i=>ch[(i+t)%12]; const arr=Array.from({length:12},(_,i)=>rot(i)); out.push({t,mode:"mayor",r:corr(arr,KMAJ)}); out.push({t,mode:"menor",r:corr(arr,KMIN)}); } return out.sort((a,b)=>b.r-a.r); }
+function scaleOf(t,mode){ return (mode==="mayor"?[0,2,4,5,7,9,11]:[0,2,3,5,7,8,10]).map(i=>(t+i)%12); }
+function chordsOf(t,mode){ const sc=scaleOf(t,mode), q=mode==="mayor"?["","m","m","","","m","°"]:["m","°","","m","m","",""], rn=mode==="mayor"?["I","ii","iii","IV","V","vi","vii°"]:["i","ii°","III","iv","v","VI","VII"]; return sc.map((p,i)=>({n:PC_ES[p]+q[i],rn:rn[i]})); }
+function keySample(){ if(!STG.audio) return; const {an,fb,ac}=STG.audio; an.getFloatFrequencyData(fb); const bin=ac.sampleRate/2/fb.length; const frame=new Float64Array(12); let e=0;
+  for(let b=Math.floor(60/bin);b<Math.min(fb.length,Math.floor(2200/bin));b++){ const db=fb[b]; if(db<-85) continue; const f=b*bin, m=69+12*Math.log2(f/440), mr=Math.round(m); if(Math.abs(m-mr)>0.3) continue; const w=Math.pow(10,db/20); frame[((mr%12)+12)%12]+=w; e+=w; }
+  if(e<1e-4) return; for(let i=0;i<12;i++){ KEY.chroma[i]=KEY.chroma[i]*0.995+frame[i]/e; } KEY.frames++; }
+async function openKeyDlg(){ let d=document.getElementById("keyDlg"); if(!d){ d=document.createElement("dialog"); d.id="keyDlg"; d.className="memdlg"; document.body.appendChild(d); d.addEventListener("close",()=>stopKey()); }
+  d.innerHTML=`<div class="memhead"><h3>¿En qué tonalidad está?</h3><button id="keyX">✕</button></div><div id="keyBody" class="keybody"></div>`; d.querySelector("#keyX").onclick=()=>d.close(); d.showModal();
+  if(!STG.audio&&!await startMic()){ d.close(); return; } KEY.chroma=new Float64Array(12); KEY.frames=0; KEY.t0=Date.now(); KEY.on=true; clearInterval(KEY.iv); KEY.iv=setInterval(()=>{ keySample(); if(!KEY.hold&&Date.now()-(KEY.rt||0)>500){ KEY.rt=Date.now(); renderKey(); } },100); renderKey(); }
+function stopKey(){ KEY.on=false; clearInterval(KEY.iv); }
+function miniKeys(sc,tonic){ let s=`<svg viewBox="0 0 336 80" class="kkeys">`; const W=[0,2,4,5,7,9,11], B={1:0,3:1,6:3,8:4,10:5}; for(let o=0;o<2;o++){ W.forEach((pc,i)=>{ const x=(o*7+i)*24, on=sc.includes(pc); s+=`<rect x="${x+1}" y="0" width="22" height="78" rx="3" fill="${pc===tonic?"#ff6a3d":on?"#ffd0bd":"#e9e9e6"}"/><text x="${x+12}" y="72" text-anchor="middle" class="kkl">${on?PC_ES[pc]:""}</text>`; }); }
+  for(let o=0;o<2;o++) for(const pc of [1,3,6,8,10]){ const x=(o*7+B[pc])*24+16, on=sc.includes(pc); s+=`<rect x="${x}" y="0" width="15" height="48" rx="2" fill="${pc===tonic?"#ff6a3d":on?"#c2410c":"#1c1c1f"}"/>`; } return s+"</svg>"; }
+function renderKey(){ const el=document.getElementById("keyBody"); if(!el) return; const secs=(Date.now()-KEY.t0)/1000; const ch=Array.from(KEY.chroma), mx=Math.max(...ch)||1;
+  const bars=ch.map((v,i)=>`<div class="kbar"><i style="height:${Math.round(v/mx*100)}%"></i><span>${PC_ES[i]}</span></div>`).join("");
+  let res=`<p class="note">Escuchando… pon la canción (por los parlantes) o toca en el Prophet. Mientras más suene, más seguro el resultado.</p>`;
+  if(KEY.frames>25){ const rk=keyRank(ch), a=rk[0], b=rk[1], conf=Math.max(0,Math.min(1,(a.r-b.r)*6+(a.r-0.5))); const sc=scaleOf(a.t,a.mode); const rel=a.mode==="mayor"?`${PC_ES[(a.t+9)%12]} menor`:`${PC_ES[(a.t+3)%12]} mayor`;
+    res=`<div class="kres"><div><small>Tonalidad</small><b>${PC_ES[a.t]} ${a.mode}</b><span class="note">${(b.mode!==a.mode&&((a.mode==="mayor"&&b.t===(a.t+9)%12)||(a.mode==="menor"&&b.t===(a.t+3)%12)))?`Podría ser también su relativa, <b>${rel}</b> (mismas notas): escucha qué nota se siente como «casa».`:`Relativa: ${rel} · segunda opción: ${PC_ES[b.t]} ${b.mode}`}</span></div><div class="kconf"><small>Seguridad</small><b>${Math.round(conf*100)}%</b></div></div>
+      ${miniKeys(sc,a.t)}<p class="note">Notas de la escala (en naranjo la tónica). Si improvisas con estas notas, vas a sonar «dentro».</p>
+      <div class="kchords">${chordsOf(a.t,a.mode).map(c=>`<span><b>${c.n}</b><small>${c.rn}</small></span>`).join("")}</div><p class="note">Acordes de la tonalidad: los más usados suelen ser I, IV, V y vi (o i, iv, v, VI en menor).</p>`; }
+  const ins=(STG.inputs||[]).map(x=>`<option value="${esc(x.deviceId)}" ${x.deviceId===STG.inId||(!STG.inId&&x.deviceId==="default")?"selected":""}>${esc(x.label||"Entrada")}</option>`).join("");
+  el.innerHTML=`<div class="row"><label class="note">Escuchar con: <select id="keyIn">${ins||"<option>Micrófono</option>"}</select></label><span class="note">Para la música de los parlantes, elige el <b>micrófono del Mac</b>.</span></div>${res}<div class="kbars">${bars}</div><div class="row"><span class="note">${Math.round(secs)} s escuchando</span><span class="sp" style="flex:1"></span><button id="keyReset">Empezar de nuevo</button><button id="keyStop">${KEY.on?"Pausar":"Seguir escuchando"}</button></div>`;
+  const ki=$("#keyIn"); if(ki&&!ki.dataset.w){ ki.dataset.w=1; ki.onfocus=()=>{ KEY.hold=true; }; ki.onblur=()=>{ KEY.hold=false; }; ki.onchange=async()=>{ KEY.hold=false; STG.inId=ki.value; try{ localStorage.setItem("p6AudioIn",ki.value); }catch(e){} if(STG.audio){ try{ STG.audio.st.getTracks().forEach(t=>t.stop()); STG.audio.ac.close(); }catch(e){} STG.audio=null; } await startMic(); KEY.chroma=new Float64Array(12); KEY.frames=0; KEY.t0=Date.now(); renderKey(); }; }
+  $("#keyReset").onclick=()=>{ KEY.chroma=new Float64Array(12); KEY.frames=0; KEY.t0=Date.now(); renderKey(); };
+  $("#keyStop").onclick=()=>{ if(KEY.on){ stopKey(); renderKey(); } else { KEY.on=true; KEY.iv=setInterval(()=>{ keySample(); if(!KEY.hold&&Date.now()-(KEY.rt||0)>500){ KEY.rt=Date.now(); renderKey(); } },100); } }; }
 function stageHtml(){
   const s=stageSlot(), d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
   const ins=STG.src==="mic"&&STG.inputs&&STG.inputs.length?`<select id="stIn" title="Entrada de audio">${STG.inputs.map(x=>`<option value="${esc(x.deviceId)}" ${x.deviceId===STG.inId||(!STG.inId&&x.deviceId==="default")?"selected":""}>${esc((x.label||"Entrada").replace(/\s*\(.*\)$/,""))}</option>`).join("")}</select>`:"";
@@ -2248,7 +2349,7 @@ function stageHtml(){
    <div class="sbox sspec"><div class="slab"><span>Sonido en vivo · frecuencias</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
    <div class="sbox sscope"><div class="slab"><span>Onda</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
    <div class="sbox senv"><div class="slab"><span>Envolventes</span><b><i class="kf"></i>Filtro <i class="ka"></i>Volumen</b></div><canvas id="cvEnv"></canvas></div>
-   <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
+   <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button id="stKey" title="Escucha lo que suena y te dice en qué tonalidad está">Tonalidad</button><button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
    ${STG.full?`<div class="sbox sgram"><div class="slab"><span>Historia del sonido · espectrograma</span><b>tiempo →</b></div><canvas id="cvGram"></canvas></div>
    <div class="sbox svoices"><div class="slab"><span>6 voces del Prophet</span><b>nivel por nota</b></div><canvas id="cvVoices"></canvas></div>
    <div class="sbox slfo"><div class="slab"><span>LFO</span><b id="stLfo"></b></div><canvas id="cvLfo"></canvas></div>
@@ -2256,7 +2357,7 @@ function stageHtml(){
    <div class="skbd">${kbdHtml()}</div>
    <div class="sbox sat"><div class="slab"><span>Aftertouch · pitch bend · mod</span><b id="stAt"></b></div><canvas id="cvAT"></canvas></div>`:""}
   </div><div class="cheek"></div></section>`; }
-function wireStage(){ const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ b.textContent="Pidiendo permiso…"; if(!await startMic()){ refreshStage(); return; } await listInputs(); } STG.src=v; refreshStage(); });
+function wireStage(){ const kb=document.getElementById("stKey"); if(kb) kb.onclick=openKeyDlg; const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ b.textContent="Pidiendo permiso…"; if(!await startMic()){ refreshStage(); return; } await listInputs(); } STG.src=v; refreshStage(); });
   document.querySelectorAll("[data-v2]").forEach(b=>b.onclick=()=>{ STG.arch=b.dataset.v2==="arch"; refreshStage(); });
   const si=document.getElementById("stIn"); if(si) si.onchange=async()=>{ STG.inId=si.value; try{ localStorage.setItem("p6AudioIn",si.value); }catch(e){} if(STG.audio){ try{ STG.audio.st.getTracks().forEach(t=>t.stop()); STG.audio.ac.close(); }catch(e){} STG.audio=null; } if(await startMic()) toast("Entrada de audio: "+(si.options[si.selectedIndex]||{}).text); refreshStage(); };
   document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{ STG.archMode=b.dataset.am; refreshStage(); });
@@ -2619,6 +2720,11 @@ function init(){
   $("#btnImport").onclick=()=>$("#fileIn").click(); $("#fileIn").onchange=e=>{ importFiles([...e.target.files]); e.target.value=""; };
   $("#nameOffset").onchange=()=>{ save(); refresh(); }; $("#delayMs").onchange=save; $("#chan").onchange=save;
   $("#btnDetect").onclick=detectNameOffset;
+  { const sp=$("#setPrev"); if(sp){ let on=true; try{ on=localStorage.getItem("p6PreviewNotes")!=="0"; }catch(e){} sp.checked=on; sp.onchange=()=>{ try{ localStorage.setItem("p6PreviewNotes",sp.checked?"1":"0"); }catch(e){} }; } }
+  { const k=$("#aiKey"), m=$("#aiModel"); if(k){ k.value=AI.key?"••••••••"+AI.key.slice(-4):""; m.value=AI.model; $("#aiSetStat").textContent=AI.key?"Conectado":"Sin conectar";
+    $("#aiSave").onclick=async()=>{ const v=k.value.trim(); if(v&&!v.startsWith("••")){ AI.key=v; } AI.model=m.value; try{ if(AI.key) localStorage.setItem("p6ClaudeKey",AI.key); localStorage.setItem("p6ClaudeModel",AI.model); }catch(e){}
+      $("#aiSetStat").textContent="Probando…"; try{ const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":AI.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:AI.model,max_tokens:10,messages:[{role:"user",content:"Responde OK"}]})}); const j=await r.json(); $("#aiSetStat").textContent=r.ok?"✓ Conectado con Claude":"✗ "+((j.error&&j.error.message)||r.status); k.value="••••••••"+AI.key.slice(-4); }catch(e){ $("#aiSetStat").textContent="✗ Sin conexión: "+e.message; } };
+    $("#aiDel").onclick=()=>{ AI.key=null; try{ localStorage.removeItem("p6ClaudeKey"); }catch(e){} k.value=""; $("#aiSetStat").textContent="Clave quitada"; }; } }
   $("#btnWipe").onclick=async()=>{ if(await confirmDlg("<p>¿Borrar la librería guardada en este navegador? (No afecta al Prophet.)</p>")){ state.slots.fill(null); state.pending.clear(); state.meta={}; save(); refresh(); } };
   let dc=0; const hint=$("#dropHint");
   addEventListener("dragenter",e=>{ if(e.dataTransfer.types.includes("Files")){dc++;hint.style.display="flex";} });
@@ -2629,7 +2735,7 @@ function init(){
     if(state.view==="all"&&state.stepTo&&(e.key==="ArrowDown"||e.key==="ArrowUp")){ state.stepTo(e.key==="ArrowDown"?1:-1); e.preventDefault(); return; }
     if(e.key==="ArrowDown"&&s<999){select(s+1);e.preventDefault();} if(e.key==="ArrowUp"&&s>0){select(s-1);e.preventDefault();}
     if(e.key===" "){audition(s);e.preventDefault();} if(e.key==="p"||e.key==="P") state.view==="panel"?setView(state.prevView):openPanel(s); });
-  normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll(); memLoad(); { const bi=document.getElementById("btnInsp"); if(bi) bi.onclick=()=>toggleInspector(); let h=false; try{ h=localStorage.getItem("p6HideInsp")==="1"; }catch(e){} toggleInspector(h); }
+  normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll(); memLoad(); { const bk=document.getElementById("btnKey"); if(bk) bk.onclick=openKeyDlg; } { const bi=document.getElementById("btnInsp"); if(bi) bi.onclick=()=>toggleInspector(); let h=false; try{ h=localStorage.getItem("p6HideInsp")==="1"; }catch(e){} toggleInspector(h); }
   log("Listo. Pulsa Conectar (Chrome pedirá permiso para MIDI con SysEx).");
 }
 load().then(init);
