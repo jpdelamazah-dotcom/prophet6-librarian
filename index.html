@@ -806,10 +806,10 @@ body.stagefull{overflow:hidden}
         <input type="number" id="delayMs" value="120" min="20" max="2000" style="width:80px">
       </div>
       <div class="setcard"><h3>Registro de actividad</h3><div id="log"></div></div>
-      <div class="setcard"><h3>Botón «Escuchar»</h3><p class="note">Al pulsar ▶ o «Escuchar», el Prophet cambia a ese sonido y la app toca un acorde corto (o una nota en bajos) para que lo oigas sin tocar el teclado. Requiere el modo «Escuchar» o «Editar».</p><label class="note"><input type="checkbox" id="setPrev"> Tocar notas de prueba al escuchar</label></div>
+      <div class="setcard"><h3>Botón «Escuchar»</h3><p class="note">Al cambiar de sonido, el Prophet cambia en silencio. Solo al pulsar ▶ o «Escuchar» (o la barra espaciadora) la app toca un acorde corto (o una nota en bajos) para que lo oigas sin tocar el teclado. Requiere el modo «Escuchar» o «Editar».</p><label class="note"><input type="checkbox" id="setPrev"> Tocar notas de prueba al escuchar</label></div>
       <div class="setcard"><h3>Claude dentro de la app</h3><p class="note">Para crear recetas desde la pestaña Recetas (pegando una captura o describiendo un sonido), la app se conecta a Claude con <b>tu clave de API de Anthropic</b>. Se obtiene en console.anthropic.com → API Keys y se cobra aparte de tu plan de claude.ai. La clave queda guardada solo en este navegador.</p>
         <div class="row"><input type="password" id="aiKey" placeholder="sk-ant-…" autocomplete="off" style="flex:1;min-width:240px"><select id="aiModel"><option value="claude-sonnet-5-5">Claude Sonnet 5.5 (rápido, económico)</option><option value="claude-opus-5-5">Claude Opus 5.5 (más preciso)</option></select></div>
-        <div class="row"><button class="pri" id="aiSave">Guardar y probar</button><button id="aiDel">Quitar clave</button><span class="note" id="aiSetStat"></span></div></div>
+        <div class="row"><button id="aiPasteKey" title="Pega la clave que copiaste en la consola de Anthropic">Pegar clave copiada</button><button class="pri" id="aiSave">Guardar y probar</button><button id="aiDel">Quitar clave</button><span class="note" id="aiSetStat"></span></div></div>
       <div class="setcard"><h3>Librería local</h3><p class="note">Borra lo leído y guardado en este navegador. No afecta al Prophet.</p><button id="btnWipe" class="warn">Borrar librería local</button></div>
     </div></div>
     <div id="pendbar"><span id="dirtyCount"></span><span class="sp"></span><button id="btnRevert" disabled>Descartar</button><button id="btnWrite" class="pri" disabled>Enviar al Prophet</button></div>
@@ -1060,20 +1060,20 @@ function looksBadNames(){ const ds=state.slots.filter(Boolean).slice(0,30); if(!
 async function readEdit(){ const w=waitFor(); send([0xF0,DSI,P6,0x06,0xF7]); const r=await w; if(!r) log("El edit buffer no respondió."); return r; }
 function programDump(slot,data){ const [b,p]=bankProg(slot); return [0xF0,DSI,P6,0x02,b,p,...pack(data),0xF7]; }
 function editDump(data){ return [0xF0,DSI,P6,0x03,...pack(data),0xF7]; }
-function audition(slot){
+function audition(slot,withNotes){
   if(!state.out||slot==null) return; const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; const [b,p]=bankProg(slot);
   if(state.pending.has(slot)&&!state.safe){ send(editDump(state.pending.get(slot))); showLcd(slotLabel(slot),displayName(slot),"Pendiente → edit buffer"); return; }
   send([0xB0|ch,0,b]); send([0xB0|ch,32,b]); send([0xC0|ch,p]);
   if(state.bpmLock) setTimeout(()=>sendBpm(state.bpmLockVal||120),250);
   if(state.allowPC||!state.safe){ const old=state.curProg; state.curProg=slot; schedulePanelIfLive(); if(old!=null) renderSlot(old); renderSlot(slot); }
   showLcd(slotLabel(slot),displayName(slot),catOf(slot)||"Not Assigned");
-  if(!state.pending.has(slot)) previewSlot(slot,ch);
+  if(!state.pending.has(slot)) previewSlot(slot,ch,!!withNotes);
 }
-async function previewSlot(slot,ch){ const my=(state.prevTok=(state.prevTok||0)+1); await sleep(450); if(my!==state.prevTok) return;
+async function previewSlot(slot,ch,withNotes){ const my=(state.prevTok=(state.prevTok||0)+1); await sleep(450); if(my!==state.prevTok) return;
   const r=state.out&&!state.busy&&!state.waiter?await readEdit():null; const want=(getName((currentData(slot)||[]))||"").trim();
   if(r&&want&&getName(r.data).trim()!==want){ toast(`El Prophet no cambió al ${slotLabel(slot)}. Revisa en Globales que MIDI Channel sea «All» o igual al canal de la app (Ajustes).`); return; }
   if(r){ state.editBuffer=r.data; STG.edAt=Date.now(); }
-  let pv0=true; try{ pv0=localStorage.getItem("p6PreviewNotes")!=="0"; }catch(e){} if(!pv0||my!==state.prevTok) return;
+  let pv0=true; try{ pv0=localStorage.getItem("p6PreviewNotes")!=="0"; }catch(e){} if(!withNotes||!pv0||my!==state.prevTok) return;
   const d=currentData(slot), cat=(catOf(slot)||"").toLowerCase(), mono=d&&(pv(d,P.uniOn)===1), arp=d&&pv(d,P.arpOn)===1;
   const notes=/bass|bajo/.test(cat)?[36]:mono?[48]:[48,52,55], hold=arp?3000:1500;
   state.previewing=true; notes.forEach(n=>{ send([0x90|ch,n,90]); stageNote(n,90,true); });
@@ -1154,7 +1154,7 @@ function renderFicha(){
    <div class="fenvs"><div><span class="flab">Filtro</span>${envSvg(pv(d,P.fA),pv(d,P.fD),pv(d,P.fS),pv(d,P.fR),"#c9a35a")}</div><div><span class="flab">Volumen</span>${envSvg(pv(d,P.vcaA),pv(d,P.vcaD),pv(d,P.vcaS),pv(d,P.vcaR),"#9fb3a6")}</div></div>
    <div class="ftags"><span>FX ${t.fx?"":"(apagados) "}${t.fxA} · ${t.fxB}</span><span>${t.bpm} BPM</span>${t.arp?"<span>Arpegiador</span>":""}${t.uni?"<span>Unison</span>":""}</div>
    <div class="factions"><button class="pri" id="fPlay">▶ Escuchar</button><button id="fPanel">Ver panel</button></div></div>`;
-  $("#fPlay").onclick=()=>{ if(!state.out) return toast("Conecta primero el Prophet."); audition(s); };
+  $("#fPlay").onclick=()=>{ if(!state.out) return toast("Conecta primero el Prophet."); audition(s,true); };
   $("#fPanel").onclick=()=>openPanel(s);
   $("#fFav").onclick=()=>{ state.meta[s]={...m,fav:!m.fav}; save(); renderSlot(s); renderFicha(); };
   f.querySelectorAll("[data-setcat]").forEach(b=>b.onclick=()=>{ const c=b.dataset.setcat; const targets=multi?[...state.multi]:[s];
@@ -1279,7 +1279,7 @@ function render(){
   if($("#eRead")){ $("#eRead").onclick=()=>state.out?readRange(0,499):toast("Conecta primero el Prophet."); $("#eReadAll").onclick=()=>state.out?readRange(0,999):toast("Conecta primero el Prophet."); }
   const tb=$("#libbody"); if(tb){
     tb.onclick=e=>{ const fv=e.target.closest("[data-fav]"); if(fv){ const s=+fv.dataset.fav; const m=state.meta[s]||{}; state.meta[s]={...m,fav:!m.fav}; save(); renderSlot(s); renderStats(); return; }
-      const pl=e.target.closest("[data-play]"); if(pl){ const s=+pl.dataset.play; select(s); audition(s); return; }
+      const pl=e.target.closest("[data-play]"); if(pl){ const s=+pl.dataset.play; select(s); audition(s,true); return; }
       const tr=e.target.closest("tr"); if(tr) clickSlot(+tr.id.slice(1),e); };
     tb.ondblclick=e=>{ const tr=e.target.closest("tr"); if(tr) openPanel(+tr.id.slice(1)); };
     tb.ondragstart=e=>{ const tr=e.target.closest("tr"); if(!tr) return; e.dataTransfer.setData("text/p6slot",tr.id.slice(1)); e.dataTransfer.effectAllowed="copyMove"; };
@@ -1307,7 +1307,7 @@ function renderNowBar(){
    <div class="nbright">${live}<button id="nbFav" ${d?"":"disabled"}>${m.fav?"★":"☆"}</button><button id="nbPanel" ${d?"":"disabled"}>Ver panel</button></div>`;
   const stepTo=dir=>{ const o=state.libOrder||[]; if(!o.length) return; let i=o.indexOf(state.sel); i=i<0?0:Math.max(0,Math.min(o.length-1,i+dir)); select(o[i]); const el=document.getElementById("s"+o[i]); if(el) el.scrollIntoView({block:"nearest"}); if(state.out&&(state.allowPC||!state.safe)) audition(o[i]); };
   $("#nbPrev").onclick=()=>stepTo(-1); $("#nbNext").onclick=()=>stepTo(1);
-  $("#nbPlay").onclick=()=>{ if(state.sel==null) return toast("Selecciona un sonido."); if(!state.out) return toast("Conecta primero el Prophet."); audition(state.sel); };
+  $("#nbPlay").onclick=()=>{ if(state.sel==null) return toast("Selecciona un sonido."); if(!state.out) return toast("Conecta primero el Prophet."); audition(state.sel,true); };
   $("#nbFav").onclick=()=>{ if(s==null) return; state.meta[s]={...m,fav:!m.fav}; save(); renderSlot(s); renderStats(); renderNowBar(); };
   $("#nbPanel").onclick=()=>openPanel(s);
   const bv=$("#bpmV"); const setB=v=>{ const r=sendBpm(v); if(r){ bv.value=r; if(state.bpmLock) state.bpmLockVal=r; save(); renderNowBar(); clearTimeout(state.bpmChk); state.bpmChk=setTimeout(async()=>{ const rd=await readEdit(); if(!rd) return; const got=pv(rd.data,P.bpm), uses=pv(rd.data,P.arpOn)===1||pv(rd.data,P.seqOn)===1||pv(rd.data,P.fxASync)===1||pv(rd.data,P.fxBSync)===1||pv(rd.data,P.lfoSync)===1;
@@ -1527,7 +1527,7 @@ function wirePanel(){
   b("pvEdit").onclick=async()=>{ state.panelSrc="edit"; renderPanel(); if(state.out) await readEdit(); else log("Conecta para leer el edit buffer."); };
   const step=dir=>{ let s=state.sel??-1; for(let i=0;i<1000;i++){ s=(s+dir+1000)%1000; if(currentData(s)){ state.panelSrc="sel"; select(s); if(state.out&&state.allowPC) audition(s); return; } } };
   b("pvPrev").onclick=()=>step(-1); b("pvNext").onclick=()=>step(1);
-  b("pvAud").onclick=()=>{ if(state.panelSrc==="sel"){ if(state.work&&state.work.slot===state.sel) send(editDump(state.work.data)); else audition(state.sel);} };
+  b("pvAud").onclick=()=>{ if(state.panelSrc==="sel"){ if(state.work&&state.work.slot===state.sel) send(editDump(state.work.data)); else audition(state.sel,true);} };
   b("pvAud").disabled=!state.out||state.panelSrc!=="sel";
   if(b("pvUndo")) b("pvUndo").onclick=()=>{ state.work=null; if(state.out) audition(state.sel); renderPanel(); };
   if(b("pvStore")) b("pvStore").onclick=storeFromPanel;
@@ -2704,7 +2704,7 @@ function init(){
     targets.forEach(s=>{ if(currentData(s)){ state.meta[s]={...(state.meta[s]||{}),cat:c}; renderSlot(s);} }); save(); renderStats();
     if(targets.length>1) log(`Categoría "${c||"Not Assigned"}" aplicada a ${targets.length} programas.`); };
   $("#btnFav").onclick=()=>{ const s=state.sel; const m=state.meta[s]||{}; state.meta[s]={...m,fav:!m.fav}; select(s); save(); };
-  $("#btnAudition").onclick=()=>audition(state.sel); $("#btnPanel").onclick=()=>openPanel(state.sel);
+  $("#btnAudition").onclick=()=>audition(state.sel,true); $("#btnPanel").onclick=()=>openPanel(state.sel);
   $("#btnSendEdit").onclick=()=>{ send(editDump(currentData(state.sel))); log(`${slotLabel(state.sel)} enviado al edit buffer.`); };
   $("#btnExportOne").onclick=()=>{ const s=state.sel; download(`P6_${slotLabel(s)}_${(displayName(s)||"prog").replace(/\W+/g,"_")}.syx`,programDump(s,currentData(s))); };
   $("#btnClear").onclick=()=>{ const s=state.sel; const basic=state.slots.find(x=>x&&/^basic program$/i.test(getName(x.data)));
@@ -2724,6 +2724,7 @@ function init(){
   { const k=$("#aiKey"), m=$("#aiModel"); if(k){ k.value=AI.key?"••••••••"+AI.key.slice(-4):""; m.value=AI.model; $("#aiSetStat").textContent=AI.key?"Conectado":"Sin conectar";
     $("#aiSave").onclick=async()=>{ const v=k.value.trim(); if(v&&!v.startsWith("••")){ AI.key=v; } AI.model=m.value; try{ if(AI.key) localStorage.setItem("p6ClaudeKey",AI.key); localStorage.setItem("p6ClaudeModel",AI.model); }catch(e){}
       $("#aiSetStat").textContent="Probando…"; try{ const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:{"content-type":"application/json","x-api-key":AI.key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},body:JSON.stringify({model:AI.model,max_tokens:10,messages:[{role:"user",content:"Responde OK"}]})}); const j=await r.json(); $("#aiSetStat").textContent=r.ok?"✓ Conectado con Claude":"✗ "+((j.error&&j.error.message)||r.status); k.value="••••••••"+AI.key.slice(-4); }catch(e){ $("#aiSetStat").textContent="✗ Sin conexión: "+e.message; } };
+    $("#aiPasteKey").onclick=async()=>{ try{ const t=(await navigator.clipboard.readText()).trim(); if(!/^sk-ant-/.test(t)) return toast("En el portapapeles no hay una clave (debe empezar con sk-ant-). Cópiala en la consola y vuelve a intentar."); k.value=t; $("#aiSave").click(); }catch(e){ toast("Chrome no dejó leer el portapapeles: pega la clave en el campo con ⌘V."); } };
     $("#aiDel").onclick=()=>{ AI.key=null; try{ localStorage.removeItem("p6ClaudeKey"); }catch(e){} k.value=""; $("#aiSetStat").textContent="Clave quitada"; }; } }
   $("#btnWipe").onclick=async()=>{ if(await confirmDlg("<p>¿Borrar la librería guardada en este navegador? (No afecta al Prophet.)</p>")){ state.slots.fill(null); state.pending.clear(); state.meta={}; save(); refresh(); } };
   let dc=0; const hint=$("#dropHint");
@@ -2734,7 +2735,7 @@ function init(){
   addEventListener("keydown",e=>{ if(["INPUT","SELECT"].includes(e.target.tagName)) return; const s=state.sel; if(s==null) return;
     if(state.view==="all"&&state.stepTo&&(e.key==="ArrowDown"||e.key==="ArrowUp")){ state.stepTo(e.key==="ArrowDown"?1:-1); e.preventDefault(); return; }
     if(e.key==="ArrowDown"&&s<999){select(s+1);e.preventDefault();} if(e.key==="ArrowUp"&&s>0){select(s-1);e.preventDefault();}
-    if(e.key===" "){audition(s);e.preventDefault();} if(e.key==="p"||e.key==="P") state.view==="panel"?setView(state.prevView):openPanel(s); });
+    if(e.key===" "){audition(s,true);e.preventDefault();} if(e.key==="p"||e.key==="P") state.view==="panel"?setView(state.prevView):openPanel(s); });
   normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll(); memLoad(); { const bk=document.getElementById("btnKey"); if(bk) bk.onclick=openKeyDlg; } { const bi=document.getElementById("btnInsp"); if(bi) bi.onclick=()=>toggleInspector(); let h=false; try{ h=localStorage.getItem("p6HideInsp")==="1"; }catch(e){} toggleInspector(h); }
   log("Listo. Pulsa Conectar (Chrome pedirá permiso para MIDI con SysEx).");
 }
