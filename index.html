@@ -682,6 +682,23 @@ body.stagefull{overflow:hidden}
 .satmini i{display:block;width:90px;height:8px;border-radius:4px;background:linear-gradient(90deg,#5e5ce6,#ff375f) 0/var(--at,0%) 100% no-repeat,#1c1c1f;box-shadow:inset 0 0 0 1px #2a2a2e}
 .stage.full .skbd{grid-column:1!important}.stage.full .sat{grid-column:2;grid-row:5}
 @media (max-width:1100px){ .stage.full .sface{grid-template-rows:auto 260px 150px 150px 150px 150px 110px 130px!important} .stage.full .skbd{grid-column:1/3!important;grid-row:7}.stage.full .sat{grid-column:1/3;grid-row:8} }
+
+.smem{display:flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:#1f2a22!important;border:1px solid #2f4a36!important;color:#9fe0b4!important;font:600 11px "IBM Plex Mono",monospace;cursor:pointer}
+.smem i{width:7px;height:7px;border-radius:4px;background:#30d158;box-shadow:0 0 8px #30d158}.smem b{color:#fff}
+.memdlg{width:min(760px,94vw);padding:0}.memhead{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid #18181a}.memhead h3{margin:0}
+#memBody{padding:14px 18px 18px;display:flex;flex-direction:column;gap:12px;font-size:13.5px}#memBody .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.memt{width:100%;border-collapse:collapse;font-size:13px}.memt th{text-align:left;color:#8e8e93;font-weight:600;padding:6px 8px;border-bottom:1px solid #18181a}.memt td{padding:7px 8px;border-bottom:1px solid #222225}.memt .mc{font-family:"IBM Plex Mono",monospace;color:#9fe0b4}
+.btnlike{display:inline-flex;align-items:center;padding:6px 12px;border-radius:7px;background:linear-gradient(#4a4a4d,#3e3e41);border:1px solid #1a1a1b;cursor:pointer;font-size:13px}
+
+.acc{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;background:#1b1c1f;border:1px solid #26282d;border-radius:12px;padding:12px 14px}
+.acc div{display:flex;flex-direction:column}.acc small{color:#8e8e93;font-size:11px}.acc b{font:600 22px "IBM Plex Mono",monospace}.acc b.good{color:#30d158}.acc .note{flex-basis:100%}
+.cmpwrap{display:grid;grid-template-columns:1fr 1fr;gap:12px}.cmpwrap>div{background:#0e0f12;border:1px solid #26282d;border-radius:12px;padding:8px 10px}.cmpwrap canvas{width:100%;height:170px;display:block}
+.slab .kr{background:#30d158}.slab .kb{background:#8e8e93}.slab .kl{background:#ff6a3d}
+@media (max-width:700px){ .cmpwrap{grid-template-columns:1fr} }
+
+.memdlg{width:min(920px,95vw)!important;max-height:92vh;overflow:auto;box-sizing:border-box}
+.cmpwrap>div{min-width:0}.cmpwrap .slab{flex-wrap:wrap}
+#memBody select{max-width:100%}
 </style>
 </head>
 <body>
@@ -934,7 +951,7 @@ function onMsg(e){
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; stageHead(); schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
@@ -945,7 +962,7 @@ function onMsg(e){
   if(d[0]!==0xF0||d[1]!==DSI||d[2]!==P6) return;
   const t=d[3];
   if(t===0x02){ const slot=d[4]*100+d[5]; const data=unpack(Array.from(d.slice(6,d.length-1)));
-    state.slots[slot]={data}; resolveWait({slot,data}); renderSlot(slot); }
+    state.slots[slot]={data,t:Date.now()}; resolveWait({slot,data}); renderSlot(slot); }
   else if(t===0x0F){ const nib=Array.from(d.slice(4,d.length-1)); const g={}; for(let i=0;i*2+1<nib.length;i++) g[1024+i]=(nib[2*i]&15)|((nib[2*i+1]&15)<<4); state.globalsRead=g; state.globalsReadAt=Date.now(); log("Configuración global leída del Prophet."); if(state.gWaiter){ const w=state.gWaiter; state.gWaiter=null; w(g); } return; }
   else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data});
     if(prev&&!state.learn) editFlash(prev,data);
@@ -954,14 +971,19 @@ function onMsg(e){
 }
 function resolveWait(v){ if(state.waiter){ const w=state.waiter; state.waiter=null; clearTimeout(w.t); w.res(v);} }
 function waitFor(ms=1500){ return new Promise(res=>{ state.waiter={res,t:setTimeout(()=>{state.waiter=null;res(null);},ms)}; }); }
-async function requestProgram(slot){ const [b,p]=bankProg(slot); const w=waitFor(); send([0xF0,DSI,P6,0x05,b,p,0xF7]); return w; }
+async function requestProgram(slot,ms){ const [b,p]=bankProg(slot); const t0=Date.now(); send([0xF0,DSI,P6,0x05,b,p,0xF7]); while(Date.now()-t0<(ms||1500)){ const r=await waitFor((ms||1500)-(Date.now()-t0)); if(!r) break; if(r.slot===slot) return r; if(state.slots[slot]) return {slot,data:state.slots[slot].data}; } return state.slots[slot]&&Date.now()-t0<60000&&state.slots[slot].t>t0?{slot,data:state.slots[slot].data}:null; }
 async function readRange(from,to){
   if(state.busy) return; state.busy=true; state.abort=false; $("#btnStop").disabled=false; setStatus("Leyendo…","busy"); bindPorts();
-  let ok=0,fail=0;
+  let ok=0,fail=0; const readT0=Date.now();
   for(let s=from;s<=to;s++){ if(state.abort) break;
     let r=await requestProgram(s); if(!r){ await sleep(200); r=await requestProgram(s); }
     r?ok++:fail++; progress((s-from+1)/(to-from+1)); setStatus(`Leyendo ${s-from+1}/${to-from+1}…`,"busy"); await sleep(15);
     if(!ok&&fail>=3){ log("⚠ Sin respuesta en 3 intentos: revisa en el Prophet GLOBALS → MIDI SysEx = ON y el puerto (USB/MIDI)."); break; } }
+  // segunda y tercera pasada para los que no respondieron
+  for(let pass=1;pass<=2&&!state.abort;pass++){ const miss=[]; for(let s=from;s<=to;s++){ if(!state.slots[s]||state.slots[s].t<readT0) miss.push(s); } if(!miss.length) break;
+    log(`Releyendo ${miss.length} que no respondieron (${miss.slice(0,8).map(slotLabel).join(", ")}${miss.length>8?"…":""})…`);
+    for(const s of miss){ if(state.abort) break; setStatus(`Releyendo ${slotLabel(s)}…`,"busy"); const r=await requestProgram(s,2500); if(r){ ok++; fail=Math.max(0,fail-1); } await sleep(40); } }
+  { const miss=[]; for(let s=from;s<=to;s++) if(!state.slots[s]) miss.push(s); state.missing=miss; if(miss.length) log(`⚠ Siguen sin leerse: ${miss.map(slotLabel).join(", ")}.`); }
   state.busy=false; $("#btnStop").disabled=true; progress(0); bindPorts();
   log(`Lectura: ${ok} OK, ${fail} sin respuesta${state.abort?" (detenido)":""}.`);
   if(ok&&looksBadNames()){ log("Nombres ilegibles con el offset actual; auto-detectando…"); detectNameOffset(); }
@@ -1801,7 +1823,8 @@ function renderGlobalsPage(){
   $("#glRead").onclick=async()=>{ if(!state.out) return toast("Conecta primero el Prophet."); const r=await readGlobals(); toast(r?"Configuración leída.":"El Prophet no respondió."); renderGlobalsPage(); };
   const apply=async(i,v)=>{ if(state.safe) return toast("Para cambiar la configuración, elige el modo «Editar» (arriba a la derecha)."); const g=GLOBALS[i];
     if([1029,1030,1032,1033].includes(g.n)&&!await confirmDlg(`<p>Vas a cambiar <b>${g.name}</b> a <b>${esc(g.opts?g.opts[v]:g.fmt(v))}</b>.</p><p class="note">Este ajuste afecta cómo el Prophet se comunica con la app. Si algo deja de responder, vuelve a dejarlo como estaba desde el propio Prophet (${g.hw}).</p>`)) return;
-    sendGlobal(g,v); await sleep(250); await readGlobals(); renderGlobalsPage(); };
+    sendGlobal(g,v); await sleep(300); const rd=await readGlobals(); renderGlobalsPage();
+    if(rd&&rd[g.n]!==v){ const btn=(g.hw||"").replace(/.*botón\s*/,""); await confirmDlg(`<h3 style="margin-top:0">El Prophet no aceptó el cambio</h3><p>Lo más probable: en tu Prophet <b>Param Rcv</b> no está en <b>NR</b>, y así ignora lo que le manda la app (incluidos los ajustes globales). Hazlo directo en el Prophet:</p><ol><li>Pulsa <b>GLOBALS</b> una vez (LED rojo = fila de arriba).</li><li>Pulsa el botón numérico <b>6</b> (Param Rcv) y con <b>TENS</b> (subir) / <b>BANK</b> (bajar) elige <b>nr</b>.</li><li>Pulsa el botón <b>${esc(btn||"del ajuste")}</b> (${esc(g.name)}) y elige el valor que quieres.</li><li>Pulsa <b>GLOBALS</b> hasta salir.</li></ol><p class="note">Después pulsa «Leer del Prophet» aquí para confirmar.</p>`); } };
   pg.querySelectorAll("[data-gn]").forEach(b=>b.onclick=()=>apply(+b.dataset.gn,+b.dataset.gv));
   pg.querySelectorAll("[data-gsel]").forEach(s=>s.onchange=()=>{ if(s.value!=="") apply(+s.dataset.gsel,+s.value); });
   pg.querySelectorAll("[data-grng]").forEach(r=>r.oninput=()=>{ $("#grv"+r.dataset.grng).textContent=GLOBALS[+r.dataset.grng].fmt(+r.value); });
@@ -1838,12 +1861,13 @@ function noteNm(n){ return NOTE_N[n%12]+(Math.floor(n/12)-1); }
 function envT(v){ return 0.002*Math.pow(10000,v/127); }           // 0→2 ms … 127→20 s (aprox. Prophet‑6)
 function stageData(){ const fresh=state.editBuffer&&Date.now()-STG.edAt<6000; return fresh?state.editBuffer:(state.sel!=null?currentData(state.sel):state.editBuffer)||null; }
 function envLevel(e,now){ // e={on,off,lvlOff}  devuelve 0..1
-  const A=envT(e.a),D=envT(e.d),S=e.s/127,R=envT(e.r);
+  const A=learnedEnvT("a",e.a),D=learnedEnvT("d",e.d),S=learnedSus(e.s),R=learnedEnvT("r",e.r);
   const at=(t)=>t<A?t/A:S+(1-S)*Math.exp(-(t-A)/(D/4));
   if(e.off==null) return at((now-e.on)/1000);
   const t=(now-e.off)/1000; return e.lvlOff*Math.exp(-t/(R/4));
 }
-function stageNote(n,vel){ const now=performance.now(), d=stageData(); if(!d) return;
+function stageNote(n,vel,fromApp){ const now=performance.now(), d=stageData(); if(!d) return;
+  if(!fromApp&&STG.src==="mic"&&STG.audio&&!STG.calib){ if(vel>0){ if(STG.cap&&STG.cap.off!=null){ const c=STG.cap; clearInterval(STG.capI); STG.cap=null; finishCapture(c); } if(![...STG.notes.values()].some(k=>k.off==null)&&!STG.cap) startCapture(n,"pasivo"); else if(STG.cap&&STG.cap.note!==n) cancelCapture(); } else stopCaptureNote(n); }
   document.querySelectorAll(`[data-key="${n}"]`).forEach(k=>k.classList.toggle("on",vel>0)); if(vel>0){ STG.notes.set(n,{on:now,off:null,vel}); STG.last=n; const hn=document.getElementById("hlNote"); if(hn) hn.textContent=noteNm(n); }
   else { const k=STG.notes.get(n); if(k&&k.off==null){ k.off=now; k.lvlA=envLevel({...ampE(d),...k,off:null},now); k.lvlF=envLevel({...filE(d),...k,off:null},now); } }
   kickStage(); }
@@ -1885,8 +1909,8 @@ function shapeWord(s){ if(s<20) return "triangular"; if(s<108) return "tri→sie
 STG.parts=[];
 const FMIN=20,FMAX=20000, LFR=Math.log(FMAX/FMIN);
 function fx(f,w){ return Math.log(Math.max(FMIN,f)/FMIN)/LFR*w; }
-function filtCfg(d,filLvl){ const env=(pv(d,P.lpEnv)-127)/127, atc=(STG.at||0)*(pv(d,P.atLP)?1:0)*((pv(d,P.atAmt)-127)/127)*0.5, cut=Math.min(1,Math.max(0,pv(d,P.lpFreq)/164+env*(filLvl??0.6)*0.5+atc));
-  return {lp:20*Math.pow(1000,cut), q:0.6+pv(d,P.lpRes)/127*9, hp:20*Math.pow(1000,pv(d,P.hpFreq)/164), hq:0.7+pv(d,P.hpRes)/127*6, hpOn:pv(d,P.hpFreq)>3}; }
+function filtCfg(d,filLvl){ const env=(pv(d,P.lpEnv)-127)/127, atc=(STG.at||0)*(pv(d,P.atLP)?1:0)*((pv(d,P.atAmt)-127)/127)*0.5, cut=pv(d,P.lpFreq)/164+env*(filLvl??0.6)*0.5+atc;
+  return {lp:Math.min(20000,learnedCut(cut)), q:0.6+pv(d,P.lpRes)/127*9, hp:20*Math.pow(1000,pv(d,P.hpFreq)/164), hq:0.7+pv(d,P.hpRes)/127*6, hpOn:pv(d,P.hpFreq)>3}; }
 function filtH(f,c){ let x=f/c.lp, h=1/((1-x*x)*(1-x*x)+(x/c.q)*(x/c.q)); h=Math.min(h,4);              // 4 polos ≈ (2 polos)²
   if(c.hpOn){ const y=c.hp/f; h*=Math.min(2,1/Math.sqrt((1-y*y)*(1-y*y)+(y/c.hq)*(y/c.hq))); } return h; }
 function partialsSim(d,f0){ const out=[]; const add=(lvl,shape,pw,base)=>{ if(lvl<=0.02) return; const t=shape/254, duty=0.5+((pw/254)-0.5)*0.9;
@@ -1976,7 +2000,7 @@ function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
 function stageHtml(){
   const s=state.curProg!=null&&Date.now()-(state.curProgT||0)<36e5?state.curProg:state.sel, d=stageData(); const nm=d?(s!=null?dispName(s):getName(d)):"—";
   return `<section class="stage${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
-   <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><span class="satmini" id="stAtMini" title="Aftertouch: presión de la tecla"><i></i><small>AT</small></span><span class="sled" id="stLed"></span></div>
+   <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><button class="smem" id="stMem" title="Lo que la app ha aprendido de tu Prophet real"><i></i>Memoria <b>${MEM.obs.length}</b></button><span class="satmini" id="stAtMini" title="Aftertouch: presión de la tecla"><i></i><small>AT</small></span><span class="sled" id="stLed"></span></div>
    <div class="sbox sspec"><div class="slab"><span>Sonido en vivo · frecuencias</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
    <div class="sbox sscope"><div class="slab"><span>Onda</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
    <div class="sbox senv"><div class="slab"><span>Envolventes</span><b><i class="kf"></i>Filtro <i class="ka"></i>Volumen</b></div><canvas id="cvEnv"></canvas></div>
@@ -1988,13 +2012,15 @@ function stageHtml(){
    <div class="skbd">${kbdHtml()}</div>
    <div class="sbox sat"><div class="slab"><span>Aftertouch · pitch bend · mod</span><b id="stAt"></b></div><canvas id="cvAT"></canvas></div>`:""}
   </div><div class="cheek"></div></section>`; }
-function wireStage(){ const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ if(!await startMic()) return; } STG.src=v; if(v==="sim"&&STG.audio){ /* se deja abierto para volver rápido */ } render(); }); kickStage(); }
-async function startMic(){ try{ const st=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+function wireStage(){ const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ if(!await startMic()) return; } STG.src=v; if(v==="sim"&&STG.audio){ /* se deja abierto para volver rápido */ } render(); }); kickStage(); }
+async function startMic(){ try{ if(STG.inId==null){ try{ STG.inId=localStorage.getItem("p6AudioIn")||""; }catch(e){ STG.inId=""; } } const st=await navigator.mediaDevices.getUserMedia({audio:{deviceId:STG.inId?{exact:STG.inId}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}}); listInputs();
   const ac=new (window.AudioContext||window.webkitAudioContext)(), src=ac.createMediaStreamSource(st), an=ac.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0.6; src.connect(an);
-  STG.audio={ac,an,buf:new Float32Array(an.fftSize),fb:new Float32Array(an.frequencyBinCount)}; toast("Escuchando la entrada de audio. Conecta la salida del Prophet a tu interfaz."); return true; }
+  STG.audio={ac,an,st,buf:new Float32Array(an.fftSize),fb:new Float32Array(an.frequencyBinCount)}; toast("Escuchando la entrada de audio. Conecta la salida del Prophet a tu interfaz."); return true; }
   catch(e){ toast("No pude abrir la entrada de audio: permite el micrófono/interfaz en el navegador."); return false; } }
 function autoPitch(buf,sr){ let best=-1,bc=0; const N=buf.length/2; let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i]; if(Math.sqrt(rms/N)<0.01) return null;
-  for(let lag=Math.floor(sr/2000);lag<Math.floor(sr/30);lag++){ let c=0; for(let i=0;i<N;i++) c+=buf[i]*buf[i+lag]; if(c>bc){bc=c;best=lag;} } return best>0?sr/best:null; }
+  const lo=Math.floor(sr/2000), hi=Math.floor(sr/30), cs=new Float32Array(hi+1); for(let lag=lo;lag<hi;lag++){ let c=0; for(let i=0;i<N;i++) c+=buf[i]*buf[i+lag]; cs[lag]=c; if(c>bc){bc=c;best=lag;} }
+  if(best<0) return null; for(let lag=lo+1;lag<best;lag++){ if(cs[lag]>bc*0.88&&cs[lag]>=cs[lag-1]&&cs[lag]>=cs[lag+1]){ best=lag; break; } }
+  const a=cs[best-1]||0,b=cs[best],c=cs[best+1]||0, sh=(a-c)/(2*(a-2*b+c)||1); return sr/(best+(isFinite(sh)?Math.max(-0.5,Math.min(0.5,sh)):0)); }
 function fitCanvas(cv){ if(!cv) return null; const r=cv.getBoundingClientRect(), dpr=window.devicePixelRatio||1; if(cv.width!==Math.round(r.width*dpr)||cv.height!==Math.round(r.height*dpr)){ cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr); } const g=cv.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0); return {g,w:r.width,h:r.height}; }
 function grid(g,w,h){ g.clearRect(0,0,w,h); if(!(w>8&&h>8)) return; g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1; for(let x=0;x<=w;x+=w/8){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); } for(let y=0;y<=h;y+=h/4){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } }
 function kickStage(){ if(!STG.raf) STG.raf=requestAnimationFrame(drawStage); }
@@ -2006,16 +2032,16 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     let z=0; for(let i=1;i<buf.length/2;i++){ if(buf[i-1]<0&&buf[i]>=0){ z=i; break; } }
     grid(A.g,A.w,A.h); A.g.strokeStyle="#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.6)"; A.g.shadowBlur=8; A.g.beginPath(); const n=Math.min(1024,buf.length-z); for(let i=0;i<n;i++){ const x=i/n*A.w, y=A.h/2-buf[z+i]*A.h*0.45; i?A.g.lineTo(x,y):A.g.moveTo(x,y); } A.g.stroke(); A.g.shadowBlur=0;
     const hz=autoPitch(buf,ac.sampleRate); document.getElementById("stHz").textContent=hz?`${hz.toFixed(1)} Hz · ${noteNm(Math.round(69+12*Math.log2(hz/440)))}`:"Sin señal";
-    const sr=ac.sampleRate, sp=[]; for(let i=0;i<140;i++){ const f=FMIN*Math.exp(i/140*LFR), bi=Math.round(f/(sr/2)*fb.length), db=fb[bi]??-140, v=Math.max(0,(db+95)/75); if(v>0.02) sp.push({f,a:v*0.35}); }
+    const sr=ac.sampleRate, sp=[]; for(let i=0;i<140;i++){ const f=FMIN*Math.exp(i/140*LFR), bi=Math.round(f/(sr/2)*fb.length); let db=fb[bi]??-140; if(MEM.noise){ const nb=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); const nd=MEM.noise.bands[Math.max(0,Math.min(NB-1,nb))]; const lin=Math.pow(10,db/10)-Math.pow(10,(nd+3)/10); db=lin>0?10*Math.log10(lin):-140; } const v=Math.max(0,(db+95)/75); if(v>0.02) sp.push({f,a:v*0.35}); }
     const dd=stageData(); drawChroma(B,sp,dd?filtCfg(dd,0.6):null,1);
     if(STG.full&&dd) drawExtras({d:dd,spf:sp,cfg:filtCfg(dd,0.6),ce:{},now,amp:Math.min(1,sp.reduce((m,p)=>Math.max(m,p.a*2.5),0)),energy:1});
     document.getElementById("stCut").textContent="Audio real · 20 Hz – 20 kHz"; if(led) led.classList.toggle("on",!!hz); busy=true; }
-  else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69)/12), amp=ce.amp==null?0.85:ce.amp;
+  else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69+pitchOff(pv(d,P.osc1Freq)))/12), amp=ce.amp==null?0.85:ce.amp;
     const {y,cutHz}=simSignal(d,f0,ce.fil==null?0.6:ce.fil);
     grid(A.g,A.w,A.h); A.g.strokeStyle=ce.amp==null?"rgba(255,106,61,.55)":"#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.7)"; A.g.shadowBlur=ce.amp==null?0:10;
     A.g.beginPath(); const N=y.length*0.625|0; for(let i=0;i<N;i++){ const x=i/N*A.w, yy=A.h/2-y[i]*amp*A.h*0.42; i?A.g.lineTo(x,yy):A.g.moveTo(x,yy); } A.g.stroke(); A.g.shadowBlur=0;
     document.getElementById("stHz").textContent=ce.amp==null?"Toca una tecla del Prophet":`${noteNm(n)} · ${f0.toFixed(1)} Hz`;
-    const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*Math.min(2,filtH(p.f,cfg))/2}));
+    const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
     if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
     const left=drawChroma(B,spf,cfg,ce.amp==null?0.18:ce.amp);
     if(STG.full) drawExtras({d,spf,cfg,ce,now,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp}); else drawAT({d});
@@ -2038,6 +2064,171 @@ function stageHead(){ const el=document.getElementById("stNum")||{}; const s=sta
 function stagePoll(){ clearTimeout(STG.pt); const go=state.view==="all"&&document.getElementById("stage")&&state.out&&!state.busy&&!state.waiter&&!state.wiz&&!document.hidden;
   if(go){ state.quietEdit=true; readEdit().then(r=>{ if(r){ STG.edAt=Date.now(); const sub=document.getElementById("stSub"); if(sub) sub.textContent=waveLabel(r.data); kickStage(); } }).finally(()=>{ state.quietEdit=false; }); }
   STG.pt=setTimeout(stagePoll,go?700:1200); }
+/* ================= MEMORIA QUE APRENDE DE LA REALIDAD =================
+   Cada vez que suena el Prophet con «Audio real» activo, la app mide el sonido real (afinación, espectro,
+   ataque, decay, sustain, release) y lo guarda junto con los parámetros del sonido. La simulación usa esa
+   memoria para corregirse. La memoria es solo de agregar: la app no tiene ningún botón para borrarla. */
+const MEM={obs:[], models:null, noise:null, fh:null, fileOk:false, dirty:false};
+const LKEYS=["osc1Freq","osc1Shape","osc1PW","osc1Lvl","osc2Freq","osc2Fine","osc2Shape","osc2PW","osc2Lvl","subLvl","noise","lpFreq","lpRes","lpEnv","lpKey","fA","fD","fS","fR","hpFreq","hpRes","vcaAmt","vcaA","vcaD","vcaS","vcaR","fxOn","uniOn","lfoAmt","dist","slop"];
+const NB=48, BF=Array.from({length:NB},(_,i)=>30*Math.pow(16000/30,(i+0.5)/NB));
+let mdb=null;
+function memOpen(){ return new Promise(res=>{ try{ const r=indexedDB.open("p6memoria",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>{ mdb=r.result; res(); }; r.onerror=()=>res(); }catch(e){ res(); } }); }
+function memGet(k){ return new Promise(res=>{ if(!mdb) return res(null); try{ const t=mdb.transaction("kv").objectStore("kv").get(k); t.onsuccess=()=>res(t.result); t.onerror=()=>res(null); }catch(e){ res(null); } }); }
+function memPut(k,v){ try{ if(mdb) mdb.transaction("kv","readwrite").objectStore("kv").put(v,k); }catch(e){} }
+async function memLoad(){ await memOpen(); const a=await memGet("obs")||[]; let b=[]; try{ b=JSON.parse(localStorage.getItem("p6memoria")||"[]"); }catch(e){}
+  MEM.noise=await memGet("noise"); MEM.fh=await memGet("fh"); memMerge(a.concat(b)); rebuildModels(); renderMemBadge();
+  if(MEM.fh){ try{ MEM.fileOk=(await MEM.fh.queryPermission({mode:"readwrite"}))==="granted"; }catch(e){ MEM.fileOk=false; } } }
+function memMerge(list){ const seen=new Set(MEM.obs.map(o=>o.id)); let n=0; for(const o of list||[]) if(o&&o.id&&!seen.has(o.id)){ MEM.obs.push(o); seen.add(o.id); n++; } MEM.obs.sort((x,y)=>x.t-y.t); return n; }
+let memT; function memSave(){ clearTimeout(memT); memT=setTimeout(async()=>{ memPut("obs",MEM.obs); try{ localStorage.setItem("p6memoria",JSON.stringify(MEM.obs)); }catch(e){}
+  if(MEM.fh&&MEM.fileOk){ try{ const w=await MEM.fh.createWritable(); await w.write(JSON.stringify({app:"Prophet 6",tipo:"memoria",version:1,guardado:new Date().toISOString(),observaciones:MEM.obs})); await w.close(); }catch(e){ MEM.fileOk=false; } }
+  renderMemBadge(); },400); }
+function memAdd(o){ o.id=Date.now().toString(36)+Math.random().toString(36).slice(2,7); o.t=Date.now(); MEM.obs.push(o); rebuildModels(); memSave(); toast(`Aprendido: ${o.src==="cal"?"calibración":"nota"} ${noteNm(o.note)} (${MEM.obs.length} en la memoria)`); const dl=document.getElementById("memDlg"); if(dl&&dl.open) renderMemPanel(); }
+function paramsOf(d){ const p={}; for(const k of LKEYS) p[k]=pv(d,P[k]); return p; }
+function fakeData(p){ const d=new Uint8Array(UNPACKED); for(const k in p) if(P[k]!=null) d[idx(P[k])]=p[k]; return d; }
+/* --- modelos --- */
+function interpLog(pairs,v,base){ // pares [valor, medido]; corrige la fórmula base con la razón (en log) aprendida
+  if(!pairs||!pairs.length) return base(v); const pts=[...pairs].map(([x,m])=>[x,Math.log(m/base(x))]).sort((a,b)=>a[0]-b[0]);
+  let lr; if(v<=pts[0][0]) lr=pts[0][1]; else if(v>=pts[pts.length-1][0]) lr=pts[pts.length-1][1];
+  else { for(let i=1;i<pts.length;i++) if(v<=pts[i][0]){ const [x0,y0]=pts[i-1],[x1,y1]=pts[i]; lr=y0+(y1-y0)*(v-x0)/((x1-x0)||1); break; } }
+  return base(v)*Math.exp(lr); }
+function median(a){ if(!a.length) return null; const s=[...a].sort((x,y)=>x-y); return s[s.length>>1]; }
+function groupMed(pairs){ const m=new Map(); for(const [x,y] of pairs){ if(!(y>0)||!isFinite(y)) continue; if(!m.has(x)) m.set(x,[]); m.get(x).push(y); } return [...m].map(([x,ys])=>[x,median(ys)]); }
+function cutBase(x){ return 20*Math.pow(1000,Math.max(0,Math.min(1,x))); }
+function cutKey(p){ return p.lpFreq/164+((p.lpEnv-127)/127)*(p.fS/127)*0.5; }
+function predBands(p,note,cutHz,withRes){ const d=fakeData(p), f0=440*Math.pow(2,(note-69+pitchOff(p.osc1Freq))/12), ps=partialsSim(d,f0);
+  const c={lp:cutHz, q:0.6+p.lpRes/127*9, hp:20*Math.pow(1000,p.hpFreq/164), hq:0.7+p.hpRes/127*6, hpOn:p.hpFreq>3};
+  const lin=new Float32Array(NB); const put=(f,a)=>{ const i=Math.floor(Math.log(f/30)/Math.log(16000/30)*NB); if(i>=0&&i<NB) lin[i]+=a*a; };
+  for(const q of ps.list) put(q.f,q.a*Math.min(4,filtH(q.f,c))); if(ps.noise>0.02) for(let i=0;i<NB;i++) lin[i]+=Math.pow(ps.noise*0.05*Math.min(4,filtH(BF[i],c)),2);
+  const db=Array.from(lin,v=>10*Math.log10(v+1e-9)); const mx=Math.max(...db); const out=db.map(v=>v-mx);
+  if(withRes&&MEM.models&&MEM.models.res) for(let i=0;i<NB;i++) out[i]+=MEM.models.res[i]||0; return out; }
+function smoothEnv(a){ const m=a.map((_,i)=>Math.max(...a.slice(Math.max(0,i-2),i+3))); return m.map((_,i)=>{ const w=m.slice(Math.max(0,i-1),i+2); return w.reduce((x,y)=>x+y,0)/w.length; }); }
+function shapeErr(real,pred){ real=smoothEnv(real); pred=smoothEnv(pred); let e=0,n=0; for(let i=0;i<NB;i++){ if(real[i]<-45&&pred[i]<-45) continue; const a=Math.max(-60,real[i]), b=Math.max(-60,pred[i]); e+=(a-b)*(a-b); n++; } return n?e/n:1e9; }
+function fitCut(o){ let best=null,be=1e18; for(let k=0;k<70;k++){ const c=30*Math.pow(16000/30,k/69); const e=shapeErr(o.bands,predBands(o.p,o.note,c,false)); if(e<be){ be=e; best=c; } } return best; }
+function rebuildModels(){ const M={n:MEM.obs.length,a:[],d:[],r:[],s:[],cut:[],pitch:null,res:null,counts:{}};
+  const A=[],D=[],R=[],S=[],C=[],PO=[]; const resAcc=new Float32Array(NB), resN=new Float32Array(NB);
+  for(const o of MEM.obs){ const p=o.p; if(!p) continue;
+    if(o.atk>0&&o.q>=0.5) A.push([p.vcaA,o.atk]); if(o.dec>0&&o.q>=0.5) D.push([p.vcaD,o.dec]); if(o.rel>0&&o.q>=0.5) R.push([p.vcaR,o.rel]); if(o.sus!=null&&o.q>=0.5) S.push([p.vcaS,Math.max(0.001,o.sus)]);
+    if(o.f0&&o.q>=0.6) PO.push(p.osc1Freq-12*Math.log2(o.f0/(440*Math.pow(2,(o.note-69)/12))));
+    if(o.bands&&o.q>=0.6&&(p.osc1Lvl>20||p.osc2Lvl>20)){ if(o.cutFit==null) o.cutFit=fitCut(o); C.push([+cutKey(p).toFixed(3),o.cutFit]); } }
+  M.a=groupMed(A); M.d=groupMed(D); M.r=groupMed(R); M.s=groupMed(S); M.cut=groupMed(C);
+  if(PO.length) M.pitch=median(PO);
+  MEM.models=M; // residual (después de tener el corte aprendido)
+  for(const o of MEM.obs){ if(!o.bands||o.q<0.6||!o.p) continue; const pr=smoothEnv(predBands(o.p,o.note,learnedCut(cutKey(o.p)),false)), rb=smoothEnv(o.bands); for(let i=0;i<NB;i++){ if(rb[i]<-50) continue; resAcc[i]+=Math.max(-24,Math.min(24,rb[i]-pr[i])); resN[i]++; } }
+  if(resN.some(x=>x>0)){ const r=new Array(NB).fill(0); for(let i=0;i<NB;i++){ let s=0,w=0; for(let k=-2;k<=2;k++){ const j=i+k; if(j>=0&&j<NB&&resN[j]){ s+=resAcc[j]/resN[j]; w++; } } r[i]=w?s/w:0; } M.res=r; }
+  M.counts={ataque:A.length,decay:D.length,sustain:S.length,release:R.length,filtro:C.length,afinacion:PO.length,espectro:resN.reduce((m,x)=>Math.max(m,x),0)};
+  MEM.models=M; }
+function learnedEnvT(kind,v){ const M=MEM.models; return M&&M[kind]&&M[kind].length?interpLog(M[kind],v,envT):envT(v); }
+function learnedSus(v){ const M=MEM.models; return M&&M.s&&M.s.length?Math.min(1,interpLog(M.s,v,x=>Math.max(0.001,x/127))):v/127; }
+function learnedCut(x){ const M=MEM.models; return M&&M.cut&&M.cut.length?interpLog(M.cut,x,cutBase):cutBase(x); }
+function pitchOff(osc1Freq){ const M=MEM.models; return M&&M.pitch!=null?osc1Freq-M.pitch:0; }
+function resGain(f){ const M=MEM.models; if(!M||!M.res) return 1; const i=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); return i>=0&&i<NB?Math.pow(10,M.res[i]/20):1; }
+/* --- medición del audio real --- */
+function bandsNow(){ const {fb,ac}=STG.audio, sr=ac.sampleRate, bin=sr/2/fb.length, out=new Float32Array(NB);
+  for(let i=0;i<NB;i++){ const lo=30*Math.pow(16000/30,i/NB), hi=30*Math.pow(16000/30,(i+1)/NB); let s=0,n=0; for(let b=Math.floor(lo/bin);b<=Math.ceil(hi/bin)&&b<fb.length;b++){ s+=Math.pow(10,fb[b]/10); n++; } out[i]=10*Math.log10((n?s/n:0)+1e-12); } return out; }
+function startCapture(note,src){ if(!STG.audio) return; STG.cap={note,src:src||"pasivo",t0:performance.now(),off:null,tr:[],acc:new Float64Array(NB),accN:0,pit:[],p:paramsOf(stageData()||new Uint8Array(UNPACKED))};
+  clearInterval(STG.capI); STG.capI=setInterval(sampleCapture,12); }
+function stopCaptureNote(note){ if(STG.cap&&STG.cap.note===note&&STG.cap.off==null) STG.cap.off=performance.now(); }
+function cancelCapture(){ clearInterval(STG.capI); STG.cap=null; }
+function sampleCapture(){ const c=STG.cap; if(!c||!STG.audio) return cancelCapture(); const {an,buf,fb,ac}=STG.audio; an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(fb);
+  let r=0; const W0=buf.length-1024; for(let i=W0;i<buf.length;i++) r+=buf[i]*buf[i]; r=Math.sqrt(r/1024); const now=performance.now(), t=(now-c.t0)/1000;
+  const nf=MEM.noise?MEM.noise.rms:0.002; c.tr.push([t,Math.max(0,r-nf*0.9)]);
+  if(c.off==null&&t>0.12){ const b=bandsNow(); if(r>nf*4){ for(let i=0;i<NB;i++){ const sig=Math.pow(10,b[i]/10)-(MEM.noise?Math.pow(10,MEM.noise.bands[i]/10):0); c.acc[i]+=Math.max(sig,1e-12); } c.accN++; const hz=autoPitch(buf,ac.sampleRate); if(hz) c.pit.push(hz); } }
+  const peak=Math.max(...c.tr.map(x=>x[1]),1e-9);
+  const done=(c.off!=null&&((now-c.off>350&&r<nf*1.6+peak*0.03)||now-c.off>6000))||t>14;
+  if(done){ clearInterval(STG.capI); STG.cap=null; finishCapture(c); } }
+function finishCapture(c){ const tr=c.tr, peak=Math.max(...tr.map(x=>x[1])); const nf=MEM.noise?MEM.noise.rms:0.002;
+  const snr=peak/(nf+1e-6); if(peak<0.003||snr<6){ log(`Memoria: nota ${noteNm(c.note)} descartada (muy bajo o mucho ruido de fondo, S/R ${snr.toFixed(1)}).`); return; }
+  const exp=440*Math.pow(2,(c.note-69+pitchOff(c.p.osc1Freq))/12), f0=median(c.pit);
+  // ¿es realmente el Prophet? la afinación debe calzar con la nota (±1 semitono, o una octava exacta)
+  let q=1; if(f0){ const semi=12*Math.log2(f0/exp), dev=Math.abs(semi-12*Math.round(semi/12)); if(dev>1.2) q=0.3; else if(dev>0.6) q=0.6; } else q=0.55;
+  if(c.accN<3) q=Math.min(q,0.45);
+  const at=x=>{ const i=tr.findIndex(p=>p[1]>=x*peak); return i<0?null:tr[i][0]; };
+  const t10=at(0.1), t90=at(0.9), atk=t10!=null&&t90!=null?Math.max(0.002,(t90-t10)/0.8):null;
+  const offT=c.off!=null?(c.off-c.t0)/1000:null; const hold=tr.filter(p=>offT==null||p[0]<offT);
+  const tail=hold.slice(Math.floor(hold.length*0.7)); const susAbs=median(tail.map(p=>p[1])); const sus=susAbs!=null?susAbs/peak:null;
+  const ip=tr.findIndex(p=>p[1]>=peak*0.999); let dec=null; if(sus!=null&&sus<0.9){ const target=sus+(1-sus)*0.37; const j=hold.findIndex((p,i)=>i>ip&&p[1]<=target*peak); if(j>0) dec=Math.max(0.002,(hold[j][0]-hold[ip][0])*4); }
+  let rel=null; if(offT!=null){ const L0=(tr.find(p=>p[0]>=offT)||[0,0])[1]; const j=tr.findIndex(p=>p[0]>offT&&p[1]<=L0*0.37); if(L0>peak*0.05&&j>0) rel=Math.max(0.002,(tr[j][0]-offT)*4); }
+  let bands=null; if(c.accN){ const b=Array.from(c.acc,v=>10*Math.log10(v/c.accN)); const mx=Math.max(...b); bands=b.map(v=>+(v-mx).toFixed(1)); }
+  STG.lastCap={tr,offT,p:c.p,note:c.note};
+  memAdd({src:c.src,note:c.note,p:c.p,name:(stageData()?getName(stageData()):""),f0:f0?+f0.toFixed(2):null,atk,dec,sus,rel,bands,q:+q.toFixed(2),snr:+snr.toFixed(1)}); }
+async function learnNoise(){ if(!STG.audio&&!await startMic()) return; toast("Midiendo el ruido de fondo 2 segundos: no toques el Prophet…"); const acc=new Float64Array(NB); let n=0,rs=[];
+  const t0=performance.now(); await new Promise(res=>{ const iv=setInterval(()=>{ const {an,buf,fb}=STG.audio; an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(fb); let r=0; for(const v of buf) r+=v*v; rs.push(Math.sqrt(r/buf.length)); const b=bandsNow(); for(let i=0;i<NB;i++) acc[i]+=Math.pow(10,b[i]/10); n++; if(performance.now()-t0>2000){ clearInterval(iv); res(); } },20); });
+  MEM.noise={rms:median(rs),bands:Array.from(acc,v=>10*Math.log10(v/n)),t:Date.now()}; memPut("noise",MEM.noise); toast("Listo: la app descuenta ese ruido de fondo de lo que mide."); renderMemPanel(); }
+/* --- calibración automática --- */
+const CAL_BASE={osc1Freq:24,osc1Shape:127,osc1PW:127,osc1Lvl:127,osc1Sync:0,osc2Lvl:0,subLvl:0,noise:0,slop:0,lpFreq:164,lpRes:0,lpEnv:127,lpKey:0,lpVel:0,hpFreq:0,hpRes:0,hpEnv:127,hpKey:0,hpVel:0,fA:0,fD:0,fS:127,fR:0,vcaAmt:127,vcaA:0,vcaD:0,vcaS:127,vcaR:0,vcaVel:0,lfoAmt:0,lfoF1:0,lfoF2:0,lfoPW:0,lfoAmp:0,lfoLP:0,lfoHP:0,atAmt:127,atF1:0,atF2:0,atLP:0,atHP:0,atVCA:0,atLFO:0,pmF1:0,pmShape:0,pmPW:0,pmLP:0,pmHP:0,fxOn:0,dist:0,uniOn:0,arpOn:0,glideOn:0,volume:110,pan:64};
+function noteSend(n,on){ const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; send([(on?0x90:0x80)|ch,n,on?100:0]); stageNote(n,on?100:0,true); }
+async function setP(o){ for(const [k,v] of Object.entries(o)) if(P[k]!=null){ sendNRPN(P[k],v); if(state.editBuffer) state.editBuffer[idx(P[k])]=v; await sleep(5); } STG.edAt=Date.now(); }
+async function playMeasure(note,holdS,waitS){ if(STG.cap){ const c=STG.cap; clearInterval(STG.capI); STG.cap=null; finishCapture(c); } startCapture(note,"cal"); noteSend(note,true); await sleep(holdS*1000); stopCaptureNote(note); noteSend(note,false);
+  const t0=Date.now(); while(STG.cap&&Date.now()-t0<(waitS+6)*1000){ if(STG.calAbort) break; await sleep(60); } await sleep(150); }
+async function calibrate(){ if(!state.out) return toast("Conecta primero el Prophet.");
+  if(!await confirmDlg(`<h3 style="margin-top:0">Calibración automática</h3><p>La app va a tocar notas en tu Prophet y a escucharlas por la entrada de audio para aprender cómo suena de verdad: afinación, filtro, ataque, decay, sustain y release.</p><ul><li>Dura unos 3 minutos. <b>Baja un poco el volumen.</b></li><li>Solo cambia el sonido que está en edición (no toca tu memoria de presets). Al final lo deja como estaba.</li><li>Lo ideal: la salida del Prophet conectada a tu interfaz de audio, sin música de fondo.</li></ul><p class="note">Necesita el modo «Editar» (para mover parámetros) y GLOBALS → Param Rcv en NRPN.</p>`)) return;
+  if(state.safe){ await setMode("editar"); if(state.safe) return; }
+  if(STG.src!=="mic"){ if(!STG.audio&&!await startMic()) return; STG.src="mic"; render(); }
+  if(!MEM.noise) await learnNoise();
+  const saved=await readEdit(); STG.calib=true; STG.calAbort=false; setStatus("Calibrando…","busy");
+  const steps=[]; const S=(lab,o,note,hold,wait)=>steps.push({lab,o,note,hold,wait});
+  for(const v of [12,24,36]) S(`Afinación (Osc Freq ${v})`,{...CAL_BASE,osc1Freq:v},57,0.7,0.3);
+  for(const v of [0,64,127,190,254]) S(`Forma de onda ${v}`,{...CAL_BASE,osc1Shape:v},45,0.8,0.3);
+  for(let v=0;v<=164;v+=12) S(`Filtro corte ${v}`,{...CAL_BASE,lpFreq:v},45,0.7,0.3); S("Filtro corte 164",{...CAL_BASE,lpFreq:164},45,0.7,0.3);
+  for(const v of [0,64,127]) S(`Resonancia ${v}`,{...CAL_BASE,lpFreq:80,lpRes:v},45,0.7,0.3);
+  for(const v of [0,16,32,48,64,80,96]) S(`Ataque ${v}`,{...CAL_BASE,vcaA:v},57,Math.min(6,envT(v)*1.6+0.4),0.3);
+  for(const v of [8,24,48,72,96]) S(`Decay ${v}`,{...CAL_BASE,vcaD:v,vcaS:0},57,Math.min(6,envT(v)*1.4+0.4),0.3);
+  for(const v of [0,32,64,96,127]) S(`Sustain ${v}`,{...CAL_BASE,vcaD:24,vcaS:v},57,1.3,0.3);
+  for(const v of [8,24,48,72,96]) S(`Release ${v}`,{...CAL_BASE,vcaR:v},57,0.6,Math.min(6,envT(v)*1.4+0.3));
+  const before=MEM.obs.length; let i=0;
+  for(const st of steps){ if(STG.calAbort||!state.out) break; i++; setStatus(`Calibrando ${i}/${steps.length}: ${st.lab}`,"busy"); progress(i/steps.length);
+    await setP(st.o); await sleep(180); await playMeasure(st.note,st.hold,st.wait); }
+  const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; send([0xB0|ch,123,0]);
+  if(saved&&saved.data){ send([0xF0,DSI,P6,0x03,...pack(saved.data),0xF7]); state.editBuffer=saved.data; }
+  STG.calib=false; progress(0); setStatus("Conectado","ok"); renderMemPanel();
+  toast(`Calibración lista: ${MEM.obs.length-before} mediciones nuevas guardadas en la memoria.`); }
+/* --- interfaz de la memoria --- */
+function renderMemBadge(){ const b=document.getElementById("stMem"); if(b) b.innerHTML=`<i></i>Memoria <b>${MEM.obs.length}</b>`; }
+function memSummary(){ const c=(MEM.models&&MEM.models.counts)||{}; const row=(k,l,u)=>`<tr><td>${l}</td><td class="mc">${c[k]||0}</td><td>${c[k]?u:"<span class='note'>aún sin datos: usa la fórmula de fábrica</span>"}</td></tr>`;
+  return `<table class="memt"><tr><th>Qué aprende</th><th>Mediciones</th><th>Estado</th></tr>${row("afinacion","Afinación de los osciladores","corrige la nota que dibuja")}${row("filtro","Frecuencia real del filtro","reemplaza mi fórmula del corte")}${row("ataque","Tiempos de ataque","ajusta la envolvente")}${row("decay","Tiempos de decay","ajusta la envolvente")}${row("sustain","Nivel de sustain","ajusta la envolvente")}${row("release","Tiempos de release","ajusta la envolvente")}${row("espectro","Color del sonido (espectro)","corrige el brillo por banda")}</table>`; }
+
+function accuracy(){ let eb=0,el=0,n=0; for(const o of MEM.obs){ if(!o.bands||o.q<0.6||!o.p) continue; const base=predBands(o.p,o.note,cutBase(cutKey(o.p)),false); const lrn=predBands(o.p,o.note,learnedCut(cutKey(o.p)),true); eb+=shapeErr(o.bands,base); el+=shapeErr(o.bands,lrn); n++; } return n?{base:Math.sqrt(eb/n),learn:Math.sqrt(el/n),n}:null; }
+function drawCompare(){ const o=[...MEM.obs].reverse().find(x=>x.bands&&x.p); const A=fitCanvas(document.getElementById("cmpSpec")), B=fitCanvas(document.getElementById("cmpEnv")); if(!A||!B) return;
+  for(const C of [A,B]){ C.g.fillStyle="#0e0f12"; C.g.fillRect(0,0,C.w,C.h); grid(C.g,C.w,C.h); }
+  if(!o){ A.g.fillStyle="#8e8e93"; A.g.font="13px 'IBM Plex Sans',sans-serif"; A.g.fillText("Aún no hay mediciones: toca con «Audio real» o usa la calibración.",14,A.h/2); return; }
+  const base=predBands(o.p,o.note,cutBase(cutKey(o.p)),false), lrn=predBands(o.p,o.note,learnedCut(cutKey(o.p)),true);
+  const X=i=>i/(NB-1)*A.w, Y=v=>A.h-8-(Math.max(-60,v)+60)/60*(A.h-16);
+  A.g.fillStyle="rgba(48,209,88,.22)"; A.g.beginPath(); A.g.moveTo(0,A.h); o.bands.forEach((v,i)=>A.g.lineTo(X(i),Y(v))); A.g.lineTo(A.w,A.h); A.g.fill();
+  const line=(arr,col,dash)=>{ A.g.setLineDash(dash||[]); A.g.strokeStyle=col; A.g.lineWidth=2; A.g.beginPath(); arr.forEach((v,i)=>i?A.g.lineTo(X(i),Y(v)):A.g.moveTo(X(i),Y(v))); A.g.stroke(); A.g.setLineDash([]); };
+  line(o.bands,"#30d158"); line(base,"#8e8e93",[5,4]); line(lrn,"#ff6a3d");
+  A.g.font="10px 'IBM Plex Mono',monospace"; A.g.fillStyle="#6f7178"; for(const f of [50,200,1000,5000]){ const i=Math.log(f/30)/Math.log(16000/30)*(NB-1); A.g.fillText(f>=1000?f/1000+"k":f,X(i)+2,A.h-2); }
+  // envolvente real vs simulada (última captura de esta sesión)
+  const L=STG.lastCap; if(L&&L.tr.length){ const T=L.tr[L.tr.length-1][0]||1, pk=Math.max(...L.tr.map(x=>x[1]))||1, XX=t=>t/T*B.w, YY=v=>B.h-8-v*(B.h-16);
+    B.g.fillStyle="rgba(48,209,88,.2)"; B.g.beginPath(); B.g.moveTo(0,B.h); L.tr.forEach(([t,v])=>B.g.lineTo(XX(t),YY(v/pk))); B.g.lineTo(B.w,B.h); B.g.fill();
+    B.g.strokeStyle="#30d158"; B.g.lineWidth=2; B.g.beginPath(); L.tr.forEach(([t,v],i)=>i?B.g.lineTo(XX(t),YY(v/pk)):B.g.moveTo(XX(t),YY(v/pk))); B.g.stroke();
+    const sim=(learned)=>{ const e={a:L.p.vcaA,d:L.p.vcaD,s:L.p.vcaS,r:L.p.vcaR}; B.g.beginPath(); for(let x=0;x<=B.w;x+=2){ const t=x/B.w*T; let v;
+        const Af=learned?learnedEnvT("a",e.a):envT(e.a), Df=learned?learnedEnvT("d",e.d):envT(e.d), Sf=learned?learnedSus(e.s):e.s/127, Rf=learned?learnedEnvT("r",e.r):envT(e.r);
+        const at=u=>u<Af?u/Af:Sf+(1-Sf)*Math.exp(-(u-Af)/(Df/4)); if(L.offT==null||t<L.offT) v=at(t); else v=at(L.offT)*Math.exp(-(t-L.offT)/(Rf/4)); x?B.g.lineTo(x,YY(v)):B.g.moveTo(x,YY(v)); } B.g.stroke(); };
+    B.g.setLineDash([5,4]); B.g.strokeStyle="#8e8e93"; sim(false); B.g.setLineDash([]); B.g.strokeStyle="#ff6a3d"; sim(true);
+    if(L.offT!=null){ B.g.strokeStyle="rgba(255,255,255,.3)"; B.g.beginPath(); B.g.moveTo(XX(L.offT),0); B.g.lineTo(XX(L.offT),B.h); B.g.stroke(); B.g.fillStyle="#8e8e93"; B.g.fillText("suelta la tecla",XX(L.offT)+4,12); } }
+  else { B.g.fillStyle="#8e8e93"; B.g.font="12px 'IBM Plex Sans',sans-serif"; B.g.fillText("Toca una nota con «Audio real» para ver la envolvente real.",14,B.h/2); } }
+function renderMemPanel(){ const el=document.getElementById("memBody"); if(!el) return;
+  const ins=(STG.inputs||[]).map(d=>`<option value="${esc(d.deviceId)}" ${d.deviceId===STG.inId?"selected":""}>${esc(d.label||"Entrada de audio")}</option>`).join("");
+  el.innerHTML=`<p>La app aprende de tu Prophet real cada vez que tocas con <b>Audio real</b> activo (una nota a la vez) o con la calibración automática. <b>Esta memoria no se borra</b>: no hay botón para eliminarla y «Borrar librería local» no la toca.</p>
+  <div class="row"><label>Entrada de audio <select id="memIn">${ins||"<option>— activa Audio real para ver las entradas —</option>"}</select></label></div>
+  <div class="row"><button id="memNoise">Medir ruido de fondo (2 s)</button><span class="note">${MEM.noise?`Ruido medido el ${new Date(MEM.noise.t).toLocaleString()}`:"Aún no medido"}</span></div>
+  ${(()=>{ const a=accuracy(); return a?`<div class="acc"><div><small>Error de mi fórmula original</small><b>${a.base.toFixed(1)} dB</b></div><div><small>Error con lo aprendido</small><b class="good">${a.learn.toFixed(1)} dB</b></div><div><small>Mejora</small><b>${Math.max(0,Math.round((1-a.learn/a.base)*100))}%</b></div><span class="note">Promedio sobre ${a.n} notas medidas: mientras más bajo, más se parece la simulación a tu Prophet.</span></div>`:""; })()}
+  <div class="cmpwrap"><div><div class="slab"><span>Espectro · última nota medida</span><b><i class="kr"></i>real <i class="kb"></i>fórmula <i class="kl"></i>aprendido</b></div><canvas id="cmpSpec"></canvas></div>
+  <div><div class="slab"><span>Envolvente · real vs simulada</span><b><i class="kr"></i>real <i class="kl"></i>aprendido</b></div><canvas id="cmpEnv"></canvas></div></div>
+  ${memSummary()}
+  <div class="row"><button class="pri" id="memCal">Calibración automática (3 min)</button><button id="memFile">${MEM.fh?(MEM.fileOk?"Copia en archivo: activa ✓":"Reconectar archivo de memoria"):"Guardar copia permanente en un archivo…"}</button><button id="memExp">Exportar memoria</button><label class="btnlike">Importar memoria<input type="file" id="memImp" accept=".json" hidden></label></div>
+  <p class="note">${MEM.obs.length} mediciones guardadas. Se guardan en este navegador${MEM.fh&&MEM.fileOk?" y en tu archivo":""}. Para que sobreviva aunque se borren los datos del navegador, activa la copia en archivo (ej. en tu carpeta Music Teacher).</p>`;
+  $("#memNoise").onclick=learnNoise; $("#memCal").onclick=()=>{ $("#memDlg").close(); calibrate(); };
+  $("#memExp").onclick=()=>download(`prophet6-memoria-${new Date().toISOString().slice(0,10)}.json`,JSON.stringify({app:"Prophet 6",tipo:"memoria",version:1,observaciones:MEM.obs}),"application/json");
+  $("#memImp").onchange=async e=>{ const f=e.target.files[0]; if(!f) return; try{ const j=JSON.parse(await f.text()); const n=memMerge(j.observaciones||j); rebuildModels(); memSave(); toast(`${n} mediciones nuevas agregadas a la memoria.`); renderMemPanel(); }catch(err){ toast("Ese archivo no es una memoria válida."); } };
+  $("#memFile").onclick=async()=>{ try{ if(MEM.fh){ MEM.fileOk=(await MEM.fh.requestPermission({mode:"readwrite"}))==="granted"; }
+      else { if(!window.showSaveFilePicker) return toast("Este navegador no permite guardar en archivo: usa «Exportar memoria»."); MEM.fh=await showSaveFilePicker({suggestedName:"prophet6-memoria.json",types:[{description:"Memoria Prophet 6",accept:{"application/json":[".json"]}}]}); memPut("fh",MEM.fh); MEM.fileOk=true; }
+      memSave(); renderMemPanel(); }catch(e){} };
+  setTimeout(drawCompare,30);
+  const si=$("#memIn"); if(si) si.onchange=async()=>{ STG.inId=si.value; try{ localStorage.setItem("p6AudioIn",si.value); }catch(e){} if(STG.audio){ try{ STG.audio.st.getTracks().forEach(t=>t.stop()); STG.audio.ac.close(); }catch(e){} STG.audio=null; } await startMic(); toast("Entrada de audio cambiada."); }; }
+function openMemPanel(){ let d=document.getElementById("memDlg"); if(!d){ d=document.createElement("dialog"); d.id="memDlg"; d.className="memdlg"; d.innerHTML=`<div class="memhead"><h3>Memoria del Prophet</h3><button id="memX">✕</button></div><div id="memBody"></div>`; document.body.appendChild(d); d.querySelector("#memX").onclick=()=>d.close(); }
+  listInputs().then(renderMemPanel); renderMemPanel(); d.showModal(); }
+async function listInputs(){ try{ const all=await navigator.mediaDevices.enumerateDevices(); STG.inputs=all.filter(x=>x.kind==="audioinput"); }catch(e){ STG.inputs=[]; } }
 /* ================= MODO SEGURO ================= */
 function curMode(){ return !state.safe?"editar":state.allowPC?"escuchar":"ver"; }
 async function setMode(m){
@@ -2189,7 +2380,7 @@ function init(){
     if(state.view==="all"&&state.stepTo&&(e.key==="ArrowDown"||e.key==="ArrowUp")){ state.stepTo(e.key==="ArrowDown"?1:-1); e.preventDefault(); return; }
     if(e.key==="ArrowDown"&&s<999){select(s+1);e.preventDefault();} if(e.key==="ArrowUp"&&s>0){select(s-1);e.preventDefault();}
     if(e.key===" "){audition(s);e.preventDefault();} if(e.key==="p"||e.key==="P") state.view==="panel"?setView(state.prevView):openPanel(s); });
-  normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll(); { const bi=document.getElementById("btnInsp"); if(bi) bi.onclick=()=>toggleInspector(); let h=false; try{ h=localStorage.getItem("p6HideInsp")==="1"; }catch(e){} toggleInspector(h); }
+  normalizeMap(); setView("all"); renderStats(); livePoll(); stagePoll(); memLoad(); { const bi=document.getElementById("btnInsp"); if(bi) bi.onclick=()=>toggleInspector(); let h=false; try{ h=localStorage.getItem("p6HideInsp")==="1"; }catch(e){} toggleInspector(h); }
   log("Listo. Pulsa Conectar (Chrome pedirá permiso para MIDI con SysEx).");
 }
 load().then(init);
