@@ -1,5 +1,5 @@
 // Red primero (siempre la versión más nueva); si no hay internet, usa la copia guardada.
-const C="p6-v17";
+const C="p6-v18";
 self.addEventListener("install",e=>{ self.skipWaiting(); e.waitUntil(caches.open(C).then(c=>c.addAll(["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png"]))); });
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{ if(e.request.method!=="GET"||new URL(e.request.url).origin!==location.origin) return;
