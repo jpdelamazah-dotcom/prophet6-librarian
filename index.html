@@ -991,6 +991,7 @@ function onMsg(e){
   if((d[0]&0xF0)===0xA0&&d.length>=3){ STG.at=d[2]/127; STG.atT=performance.now(); kickStage(); return; }
   if((d[0]&0xF0)===0xE0&&d.length>=3){ STG.pb=(((d[2]<<7)|d[1])-8192)/8192; kickStage(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&d[1]===1){ STG.mod=d[2]/127; kickStage(); return; }
+  if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===120||d[1]===123)){ allNotesOff(); return; }
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
@@ -2024,9 +2025,16 @@ function drawChroma(B,spec,curveCfg,energy){ const g=B.g,w=B.w,h=B.h, padB=16, p
     const dot=(f)=>{ const x=padL+fx(f,W), y=H-2*Math.tanh(filtH(f,curveCfg)/2)/2*H; g.fillStyle="#c8c8cc"; g.beginPath(); g.arc(x,y,5,0,7); g.fill(); g.strokeStyle="#1a1a1c"; g.lineWidth=1.5; g.stroke(); };
     dot(curveCfg.lp); if(curveCfg.hpOn) dot(curveCfg.hp); }
   return parts.length; }
+function isHeld(n){ const k=STG.notes.get(n); return !!k&&k.off==null; }
+function cleanNotes(){ const now=performance.now(), d=stageData(); const R=d?learnedEnvT("r",pv(d,P.vcaR)):1; let ch=false;
+  for(const [n,k] of STG.notes){ if(k.off!=null&&now-k.off>Math.min(8000,R*1500+300)){ STG.notes.delete(n); ch=true; } }
+  if(ch&&STG.last!=null&&!STG.notes.has(STG.last)) STG.last=[...STG.notes.keys()].pop()??null;
+  document.querySelectorAll("[data-key]").forEach(el=>{ const on=isHeld(+el.dataset.key); if(el.classList.contains("on")!==on) el.classList.toggle("on",on); }); }
+setInterval(cleanNotes,500);
+function allNotesOff(){ const now=performance.now(); for(const k of STG.notes.values()) if(k.off==null){ k.off=now; k.lvlA=0; k.lvlF=0; } cleanNotes(); }
 function kbdHtml(){ const lo=36, hi=84, whites=[]; for(let n=lo;n<=hi;n++) if(![1,3,6,8,10].includes(n%12)) whites.push(n);
-  const ww=100/whites.length; let blacks=""; whites.forEach((n,i)=>{ if([0,2,5,7,9].includes(n%12)&&n+1<=hi) blacks+=`<i class="kb${STG.notes.has(n+1)?" on":""}" data-key="${n+1}" style="left:${(i+1)*ww-ww*0.3}%;width:${ww*0.6}%"></i>`; });
-  return `<div class="kbd">${whites.map(n=>`<b class="kw${STG.notes.has(n)?" on":""}" data-key="${n}">${n%12===0?`<small>C${n/12-1}</small>`:""}</b>`).join("")}${blacks}</div>`; }
+  const ww=100/whites.length; let blacks=""; whites.forEach((n,i)=>{ if([0,2,5,7,9].includes(n%12)&&n+1<=hi) blacks+=`<i class="kb${isHeld(n+1)?" on":""}" data-key="${n+1}" style="left:${(i+1)*ww-ww*0.3}%;width:${ww*0.6}%"></i>`; });
+  return `<div class="kbd">${whites.map(n=>`<b class="kw${isHeld(n)?" on":""}" data-key="${n}">${n%12===0?`<small>C${n/12-1}</small>`:""}</b>`).join("")}${blacks}</div>`; }
 /* ===== Pantalla completa + gráficos extra ===== */
 const LFO_SH=["Triangular","Sierra","Sierra inv.","Cuadrada","Aleatoria"];
 function lfoHz(v){ return 0.05*Math.pow(2,v/254*11); }   // aprox. 0.05 Hz … 100 Hz
@@ -2060,7 +2068,7 @@ function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
     G.g.fillStyle="#6f7178"; G.g.font="10px 'IBM Plex Mono',monospace"; for(const f of [50,200,1000,5000]){ const y=G.h-Math.log(f/FMIN)/LFR*G.h; G.g.fillText(f>=1000?f/1000+"k":f,4,y); } }
   const d=X.d; if(!d) return;
   const V=fitCanvas(document.getElementById("cvVoices"));
-  if(V&&V.w>20){ const g=V.g; g.clearRect(0,0,V.w,V.h); const keys=[...STG.notes.entries()].slice(-6), lw=V.w/6;
+  if(V&&V.w>20){ const g=V.g; g.clearRect(0,0,V.w,V.h); const keys=[...STG.notes.entries()].sort((a,b)=>(a[1].off==null?0:1)-(b[1].off==null?0:1)).slice(0,6), lw=V.w/6;
     for(let i=0;i<6;i++){ const x=i*lw+4, w=lw-8, kv=keys[i]; g.fillStyle="#141417"; g.fillRect(x,4,w,V.h-24); g.strokeStyle="#2a2a2e"; g.strokeRect(x+.5,4.5,w-1,V.h-25);
       g.fillStyle="#6f7178"; g.font="10px 'IBM Plex Mono',monospace"; g.textAlign="center";
       if(kv){ const [n,k]=kv, ea=ampE(d); const lv=k.off==null?envLevel({...ea,on:k.on},X.now):envLevel({...ea,off:k.off,lvlOff:k.lvlA||0},X.now);
