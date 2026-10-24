@@ -757,6 +757,8 @@ body.stagefull{overflow:hidden}
 .kkeys{width:100%;max-width:520px;display:block}.kkeys .kkl{font:600 8px "IBM Plex Sans",sans-serif;fill:#3a1a0b}
 .kchords{display:flex;flex-wrap:wrap;gap:6px}.kchords span{display:flex;flex-direction:column;align-items:center;background:#26272c;border-radius:8px;padding:6px 10px;min-width:48px}.kchords b{font-size:15px}.kchords small{color:#9b9ba1;font-size:10.5px}
 .kbars{display:grid;grid-template-columns:repeat(12,1fr);gap:4px;height:90px;align-items:end}.kbar{display:flex;flex-direction:column;align-items:center;height:100%;justify-content:flex-end;gap:3px}.kbar i{display:block;width:70%;background:linear-gradient(#ff6a3d,#ffd60a);border-radius:3px;min-height:2px}.kbar span{font-size:10px;color:#9b9ba1}
+
+.recbanner{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#16301f;border:1px solid #2f6b42;border-radius:14px;padding:12px 16px;margin:0 auto 14px;max-width:1500px}.recbanner>div{flex:1;min-width:240px;display:flex;flex-direction:column;gap:3px}.recbanner b{font-size:15px;color:#d8f5e0}
 </style>
 </head>
 <body>
@@ -1014,7 +1016,7 @@ function onMsg(e){
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; state.recipeLoaded=null; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
@@ -1511,11 +1513,13 @@ function renderPanel(){
   const greyDeco=(label,sub)=>`<div class="gbtnw deco"><div class="gbtn"></div><label>${label}${sub?"<br>"+sub:""}</label></div>`;
   const fxBtn=()=>`<div class="sw fxsel" id="fxSel" title="Elegir efecto A o B (solo cambia la vista)"><div class="duo"><span class="led2${FXV==="A"?" on":""}">A</span><span class="led2${FXV==="B"?" on":""}">B</span></div><div class="btn"></div><label>Effect</label></div>`;
   document.querySelectorAll("#grid #stage").forEach(e=>e.remove());
-  el.innerHTML=`${stageHtml()}<div class="p6">${head}${wizBar()}${abs()}${kbdHtml()}
+  const rb=state.recipeLoaded&&state.panelSrc==="edit"?`<div class="recbanner"><div><b>Receta «${esc(state.recipeLoaded.nombre)}» cargada: tócala en el Prophet</b><span class="note">Está en la memoria de edición del Prophet (como un sonido sin guardar). Si cambias de programa se pierde, a menos que la guardes.</span></div><button class="pri" id="rbSave">Guardar como preset…</button><button id="rbBack">Volver a Recetas</button><button id="rbX" title="Cerrar aviso">✕</button></div>`:"";
+  el.innerHTML=`${rb}${stageHtml()}<div class="p6">${head}${wizBar()}${abs()}${kbdHtml()}
   <div class="hidden-params">${sec("SIN CONTROL PROPIO EN EL PANEL (se ajustan vía menús)",SL("Glide Mode","glideMode",L.glideMode)+SL("Unison Voces","uniMode",L.uniMode)+K("Seq Steps","seqLen",63,{sm:1,fmt:x=>x+1}))}</div>
   <div class="p6foot">${state.safe?"Para mover perillas desde aquí, elige el modo «Editar» (arriba a la derecha).":state.out?"<b>Editable:</b> arrastra las perillas ↕ (Shift = fino) o usa la rueda; clic en botones y displays. Cada cambio se envía al Prophet por NRPN (requiere GLOBALS → Param Receive = NRPN). Para conservarlo: <b>Guardar en slot…</b>":"Conecta el Prophet para editar desde el Mac."}
    · Arco ámbar = valor; bipolares: ámbar positivo, azul negativo.</div></div>`;
   wirePanel(); wireStage();
+  const rbs=document.getElementById("rbSave"); if(rbs){ rbs.onclick=()=>saveRecipeAsPreset(state.recipeLoaded); document.getElementById("rbBack").onclick=()=>setView("recipe"); document.getElementById("rbX").onclick=()=>{ state.recipeLoaded=null; renderPanel(); }; }
 }
 function fitPanel(){ const p=document.querySelector("#panel .p6"); if(!p) return; p.style.zoom=1; const avail=$("#panelWrap").clientWidth-30; const w=p.scrollWidth; p.style.zoom=Math.max(.55,Math.min(1.15,avail/w)).toFixed(3); }
 addEventListener("resize",()=>{ if(state.view==="panel") fitPanel(); });
@@ -1925,19 +1929,23 @@ async function loadRecipe(r,fromBasic){
   await sleep(400); const rd=await readEdit(); setStatus("Conectado","ok");
   if(!rd) return toast("Receta enviada, pero el Prophet no respondió para confirmarla.");
   const nameOk=!r.nombre||getName(rd.data).trim()===r.nombre.slice(0,20).trim(); const chk=r.ok.filter(([k])=>mapped(P[k])); const hit=chk.filter(([k,v])=>pv(rd.data,P[k])===v).length;
-  if(nameOk&&hit>=chk.length*0.8) toast(`✓ El Prophet ya tiene «${r.nombre}». Tócala. Si te gusta: «Guardar como preset…».`);
+  if(nameOk&&hit>=chk.length*0.8||hit>=chk.length*0.6){ state.editBuffer=rd.data; STG.edAt=Date.now(); state.recipeLoaded=r; state.curProg=null; state.panelSrc="edit"; setView("panel"); toast(`✓ «${r.nombre}» está sonando en tu Prophet. Tócala.`); return; }
   else if(!nameOk&&hit<chk.length*0.3) confirmDlg(`<h3 style="margin-top:0">El Prophet no cambió</h3><p>No aceptó los parámetros. Revisa en <b>Globales</b> que Param Rcv esté en <b class="lcdtxt">nr</b>.</p>`);
   else toast(`Receta cargada (${hit}/${chk.length} parámetros confirmados).`);
 }
 async function saveRecipeAsPreset(r){
-  if(!state.out) return toast("Conecta primero el Prophet.");
+  if(!state.out) return toast("Conecta primero el Prophet."); if(state.safe){ await setMode("editar"); if(state.safe) return; }
   const rd=await readEdit(); if(!rd) return toast("No pude leer el sonido actual del Prophet.");
-  const ans=prompt("¿En qué slot User (000–499) guardar este sonido?\nQuedará pendiente hasta que pulses «Enviar al Prophet».",""); if(ans==null) return;
-  const s=parseInt(ans,10); if(isNaN(s)||s<0||s>499) return toast("Slot inválido: usa 000–499.");
-  if(currentData(s)&&!await confirmDlg(`<p>El slot <b>${slotLabel(s)}</b> tiene «${esc(displayName(s))}». ¿Reemplazarlo?</p>`)) return;
-  state.pending.set(s,Uint8Array.from(rd.data)); cleanPending(s); save(); renderStats(); updateButtons();
-  log(`Receta guardada en ${slotLabel(s)} (pendiente).`); toast(`Guardado en ${slotLabel(s)}. Pulsa «Enviar al Prophet» (abajo, en Biblioteca) para escribirlo.`);
-}
+  let sug=null; for(let x=0;x<500&&sug==null;x++){ const d=currentData(x); if(d&&/^basic program$/i.test(getName(d)||"")&&!(originOf(x)||{}).alias) sug=x; } if(sug==null) for(let x=499;x>=0&&sug==null;x--) if(!currentData(x)) sug=x; if(sug==null) sug=499;
+  const nm=esc(getName(rd.data)||(r&&r.nombre)||"");
+  if(!await confirmDlg(`<h3 style="margin-top:0">Guardar «${nm}» en tu Prophet</h3><p>Número de programa (User 000–499):</p><input id="svSlot" type="number" min="0" max="499" value="${sug}" style="width:120px;font-size:20px;padding:6px 10px"><p class="note" id="svInfo">Te sugiero el ${slotLabel(sug)}: ${currentData(sug)?`hoy tiene «${esc(displayName(sug))}», un programa vacío`:"está libre"}.</p><p class="note">Se escribe directo en la memoria del Prophet. Antes se descarga un respaldo .syx del programa que reemplazas.</p>`)) return;
+  const s=parseInt((document.getElementById("svSlot")||{}).value,10); if(isNaN(s)||s<0||s>499) return toast("Número inválido: usa 000–499.");
+  if(currentData(s)&&!/^basic program$/i.test(getName(currentData(s))||"")&&!await confirmDlg(`<p>El ${slotLabel(s)} tiene «${esc(displayName(s))}». ¿Reemplazarlo? (se descarga un respaldo antes)</p>`)) return;
+  if(currentData(s)) download(`Prophet6-respaldo-${slotLabel(s)}.syx`,programDump(s,currentData(s)));
+  send(programDump(s,rd.data)); await sleep(300); state.slots[s]={data:Uint8Array.from(rd.data),t:Date.now()}; state.pending.delete(s); orgCache.clear(); save();
+  const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; const [bk,pg]=bankProg(s); send([0xB0|ch,0,bk]); send([0xB0|ch,32,bk]); send([0xC0|ch,pg]); state.curProg=s; state.recipeLoaded=null; select(s);
+  const v=await requestProgram(s,2500); toast(v&&getName(v.data)===getName(rd.data)?`✓ Guardado en el ${slotLabel(s)} de tu Prophet. Ya está seleccionado.`:`Enviado al ${slotLabel(s)}; no pude confirmarlo leyendo el Prophet.`); log(`Receta guardada en ${slotLabel(s)}.`);
+  if(state.view==="panel") renderPanel(); }
 
 /* ===== Lectura automática al conectar (solo lectura) ===== */
 async function autoRead(){ if(state.busy) return; log("Conectado: leyendo configuración global y todos los sonidos…"); await readGlobals(); await readRange(0,999); }
