@@ -785,6 +785,10 @@ body.stagefull{overflow:hidden}
 
 .stage:not(.full) .slcd{padding-right:0}.stage:not(.full) .sface{padding-top:54px}.stage:not(.full) .ssrc{top:12px;max-width:calc(100% - 28px)}
 .stage .slcdt b,.stage .slcdt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.gtabs{display:inline-flex;gap:4px}.gtabs button{font-size:10.5px;letter-spacing:.04em;padding:3px 9px;border-radius:10px;background:#1f2125!important;color:#a9abb1!important;border:1px solid #2c2d31!important;text-transform:none}.gtabs button.act{background:#3cc39a!important;color:#04201a!important;font-weight:600}
+#cvGram{cursor:crosshair}
+.stage:not(.full):not(.arch) .sface{grid-template-rows:auto 300px 118px 118px!important}
 </style>
 </head>
 <body>
@@ -2240,9 +2244,49 @@ function drawAT(X){ const d=X.d; STG.atH=STG.atH||[]; const at=STG.at||0; STG.at
   const bx=A.w-58; [["BEND",(STG.pb||0)/2+0.5,"#64d2ff",true],["MOD",STG.mod||0,"#ffd60a"]].forEach(([n,v,c,bip],i)=>{ const x=bx+i*28, hh=H; g.fillStyle="#141417"; g.fillRect(x,4,18,hh); g.fillStyle=c; if(bip){ const y=4+hh*(1-v); g.fillRect(x,Math.min(y,4+hh/2),18,Math.abs(y-(4+hh/2))||2); } else g.fillRect(x,4+hh*(1-v),18,hh*v); g.fillStyle="#8e8e93"; g.font="8.5px 'IBM Plex Mono',monospace"; g.fillText(n,x-2,A.h-3); });
   if(d){ const dst=[["Osc1",P.atF1],["Osc2",P.atF2],["LP",P.atLP],["HP",P.atHP],["Vol",P.atVCA],["LFO",P.atLFO]].filter(([,k])=>pv(d,k)).map(([n])=>n); const amt=pv(d,P.atAmt)-127;
     const lb=document.getElementById("stAt"); if(lb) lb.textContent=dst.length?`${amt>0?"+":""}${amt} → ${dst.join(" · ")}`:"sin destino en este sonido"; } }
+/* ===== Analizador de espectro estilo SPAN (frecuencia × dB, capas de color, picos, comparación) ===== */
+const SPAN={peak:null,avg:null,n:0,hover:null};
+function spanColors(g,x0,w){ const gr=g.createLinearGradient(x0,0,x0+w,0); const X=f=>Math.log(f/20)/Math.log(1000); gr.addColorStop(0,"#2fae7a"); gr.addColorStop(X(250),"#3cc39a"); gr.addColorStop(X(700),"#5fd3d6"); gr.addColorStop(X(2500),"#a6e3d0"); gr.addColorStop(X(5000),"#ffd36b"); gr.addColorStop(X(9000),"#ff9a3c"); gr.addColorStop(1,"#ff6a2a"); return gr; }
+function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-6, H=h-T-B, DBMAX=-18, DBMIN=-90;
+  const fx=f=>L+Math.log(f/20)/Math.log(1000)*W, dy=db=>T+(DBMAX-Math.max(DBMIN,Math.min(DBMAX,db)))/(DBMAX-DBMIN)*H;
+  g.clearRect(0,0,w,h); g.fillStyle="#0b0c0e"; g.fillRect(0,0,w,h);
+  g.lineWidth=1; g.font="9.5px 'IBM Plex Mono',monospace";
+  for(let dec=10;dec<=10000;dec*=10) for(let m=1;m<10;m++){ const f=dec*m; if(f<20||f>20000) continue; const x=fx(f); g.strokeStyle=m===1?"rgba(255,255,255,.28)":"rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); }
+  g.fillStyle="#c9c9cd"; [[20,"20"],[50,"50"],[100,"100"],[200,"200"],[500,"500"],[1000,"1 k"],[2000,"2 k"],[5000,"5 k"],[10000,"10 k"],[20000,"20 k"]].forEach(([f,t])=>{ g.fillText(t,Math.min(w-26,fx(f)+3),T+10); });
+  for(let db=DBMAX;db>=DBMIN;db-=6){ const y=dy(db); g.strokeStyle="rgba(255,255,255,.07)"; g.beginPath(); g.moveTo(L,y); g.lineTo(L+W,y); g.stroke(); g.fillStyle="#8e8e93"; g.fillText(String(db),2,y+3); }
+  // espectro actual en 720 puntos log
+  const NP=720, cur=new Float32Array(NP).fill(-140);
+  if(X.mic&&STG.audio){ const an=STG.audio.an2||STG.audio.an, fb=STG.audio.fb2||STG.audio.fb; an.getFloatFrequencyData(fb); const bin=STG.audio.ac.sampleRate/2/fb.length;
+    for(let i=0;i<NP;i++){ const f0=20*Math.pow(1000,i/NP), f1=20*Math.pow(1000,(i+1)/NP); let m=-140; for(let b=Math.floor(f0/bin);b<=Math.ceil(f1/bin)&&b<fb.length;b++) m=Math.max(m,fb[b]); cur[i]=m; } }
+  else if(X.spf){ const lin=new Float32Array(NP); const e=Math.max(0.05,X.energy||0.2);
+    for(const p of X.spf){ if(p.a<1e-5) continue; const c=Math.log(p.f/20)/Math.log(1000)*NP; for(let k=Math.max(0,Math.floor(c-14));k<Math.min(NP,c+14);k++){ const d=(k-c)/3.2; lin[k]+=p.a*p.a*Math.exp(-d*d)*e*e; } }
+    for(let i=0;i<NP;i++){ cur[i]=10*Math.log10(lin[i]+1e-9)-24+(Math.sin(i*12.9898+performance.now()/90)*1.2); } }
+  if(!SPAN.peak||SPAN.peak.length!==NP){ SPAN.peak=Float32Array.from(cur); SPAN.avg=Float32Array.from(cur); }
+  for(let i=0;i<NP;i++){ SPAN.peak[i]=Math.max(cur[i],SPAN.peak[i]-0.25); SPAN.avg[i]=SPAN.avg[i]*0.97+cur[i]*0.03; }
+  const xi=i=>L+i/(NP-1)*W;
+  // relleno con colores por zona + línea
+  g.beginPath(); g.moveTo(L,T+H); for(let i=0;i<NP;i++) g.lineTo(xi(i),dy(cur[i])); g.lineTo(L+W,T+H); g.closePath();
+  const gr=spanColors(g,L,W); g.save(); g.globalAlpha=.32; g.fillStyle=gr; g.fill(); g.restore();
+  g.beginPath(); for(let i=0;i<NP;i++){ const x=xi(i), y=dy(cur[i]); i?g.lineTo(x,y):g.moveTo(x,y); } g.strokeStyle=gr; g.lineWidth=1.4; g.stroke();
+  // promedio y picos
+  g.beginPath(); for(let i=0;i<NP;i++){ const x=xi(i), y=dy(SPAN.avg[i]); i?g.lineTo(x,y):g.moveTo(x,y); } g.strokeStyle="rgba(255,255,255,.55)"; g.lineWidth=1.2; g.stroke();
+  g.beginPath(); for(let i=0;i<NP;i++){ const x=xi(i), y=dy(SPAN.peak[i]); i?g.lineTo(x,y):g.moveTo(x,y); } g.strokeStyle="rgba(255,90,70,.45)"; g.setLineDash([3,3]); g.lineWidth=1; g.stroke(); g.setLineDash([]);
+  // canción objetivo (si se escuchó)
+  if(TGT.fp){ const sh=TGT.fp.espectro_db_48bandas_30Hz_16kHz, top=Math.max(...Array.from(SPAN.avg)); g.beginPath(); sh.forEach((v,i)=>{ const x=fx(BF[i]), y=dy(top+v-6); i?g.lineTo(x,y):g.moveTo(x,y); }); g.strokeStyle="rgba(191,90,242,.85)"; g.lineWidth=2; g.setLineDash([6,4]); g.stroke(); g.setLineDash([]); }
+  // picos principales con nota
+  const pk=[]; for(let i=3;i<NP-3;i++){ const v=SPAN.avg[i]; if(v>DBMIN+14&&v>=SPAN.avg[i-1]&&v>=SPAN.avg[i+1]&&v>=SPAN.avg[i-3]&&v>=SPAN.avg[i+3]) pk.push([i,v]); } pk.sort((a,b)=>b[1]-a[1]);
+  const used=[]; g.font="600 10px 'IBM Plex Mono',monospace"; for(const [i,v] of pk){ if(used.length>=6) break; if(used.some(u=>Math.abs(u-i)<28)) continue; used.push(i); const f=20*Math.pow(1000,i/NP), x=xi(i), y=dy(v);
+    g.fillStyle="#fff"; g.beginPath(); g.arc(x,y,3,0,7); g.fill(); const t=`${noteNm(Math.round(69+12*Math.log2(f/440)))} ${f<1000?Math.round(f):(f/1000).toFixed(1)+"k"}`; g.fillStyle="rgba(0,0,0,.6)"; const tw=g.measureText(t).width; g.fillRect(x-tw/2-3,y-19,tw+6,13); g.fillStyle="#f2f2f2"; g.textAlign="center"; g.fillText(t,x,y-9); g.textAlign="left"; }
+  // cursor
+  if(SPAN.hover!=null&&SPAN.hover>L){ const x=SPAN.hover, f=20*Math.pow(1000,(x-L)/W), i=Math.max(0,Math.min(NP-1,Math.round((x-L)/W*(NP-1)))), v=cur[i];
+    g.strokeStyle="rgba(255,255,255,.5)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); const t=`${f<1000?Math.round(f)+" Hz":(f/1000).toFixed(2)+" kHz"} · ${noteNm(Math.round(69+12*Math.log2(f/440)))} · ${v>-139?v.toFixed(0)+" dB":"—"}`; g.font="11px 'IBM Plex Mono',monospace"; const tw=g.measureText(t).width; const bx=Math.min(x+8,w-tw-12); g.fillStyle="rgba(20,20,24,.92)"; g.fillRect(bx,T+16,tw+10,18); g.fillStyle="#fff"; g.fillText(t,bx+5,T+29); }
+  // leyenda
+  g.font="10px 'IBM Plex Sans',sans-serif"; const lg=[["ahora",null],["promedio","rgba(255,255,255,.7)"],["picos","rgba(255,90,70,.8)"]].concat(TGT.fp?[["canción","rgba(191,90,242,.95)"]]:[]); let lx=L+W-8; g.textAlign="right";
+  for(const [t,c] of lg.reverse()){ g.fillStyle=c||"#5fd3d6"; g.fillText("— "+t,lx,h-4); lx-=g.measureText("— "+t).width+12; } g.textAlign="left"; }
 function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
   const G=fitCanvas(document.getElementById("cvGram"));
-  if(G&&G.w>20&&G.h>20){ const cv=document.getElementById("cvGram"), dpr=window.devicePixelRatio||1;
+  if(G&&G.w>20&&G.h>20&&STG.gview!=="sono"){ drawSpan(G,X); }
+  else if(G&&G.w>20&&G.h>20){ const cv=document.getElementById("cvGram"), dpr=window.devicePixelRatio||1;
     if(!STG.gram||STG.gram.width!==cv.width||STG.gram.height!==cv.height){ STG.gram=document.createElement("canvas"); STG.gram.width=cv.width; STG.gram.height=cv.height; const g0=STG.gram.getContext("2d"); g0.fillStyle="#08080a"; g0.fillRect(0,0,cv.width,cv.height); }
     const og=STG.gram.getContext("2d"), W=cv.width, H=cv.height, col=new Float32Array(H);
     if(X.mic&&STG.audio){ const {fb,ac}=STG.audio, bin=ac.sampleRate/2/fb.length; for(let j=0;j<H;j++){ const f=FMIN*Math.exp((1-j/(H-1))*LFR), b=Math.round(f/bin); let db=fb[b]??-140; if(MEM.noise){ const nb=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); db=10*Math.log10(Math.max(1e-14,Math.pow(10,db/10)-Math.pow(10,(MEM.noise.bands[Math.max(0,Math.min(NB-1,nb))]+3)/10))); } col[j]=Math.max(0,(db+90)/70)/3; } }
@@ -2444,7 +2488,7 @@ function stageHtml(){
    <div class="sbox sscope"><div class="slab"><span>Oscilograma</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
    <div class="sbox senv"><div class="slab"><span>Envolvente ADSR</span><b><i class="kf"></i>Filtro <i class="ka"></i>Vol.</b></div><canvas id="cvEnv"></canvas></div>
    <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button id="stKey" title="Escucha lo que suena y te dice en qué tonalidad está">Tonalidad</button><button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
-   <div class="sbox sgram"><div class="slab"><span>Espectrograma · sonograma</span><b>tiempo → · color = intensidad</b></div><canvas id="cvGram"></canvas></div>
+   <div class="sbox sgram"><div class="slab"><span class="gtabs"><button class="${STG.gview!=="sono"?"act":""}" data-gv="span">Espectro (frecuencia × dB)</button><button class="${STG.gview==="sono"?"act":""}" data-gv="sono">Sonograma (en el tiempo)</button></span><b>${STG.gview==="sono"?"tiempo → · color = intensidad":"pasa el mouse para ver Hz, nota y dB"}</b></div><canvas id="cvGram"></canvas></div>
    ${STG.full?`
    <div class="sbox svoices"><div class="slab"><span>6 voces del Prophet</span><b>nivel por nota</b></div><canvas id="cvVoices"></canvas></div>
    <div class="sbox slfo"><div class="slab"><span>LFO</span><b id="stLfo"></b></div><canvas id="cvLfo"></canvas></div>
@@ -2452,15 +2496,17 @@ function stageHtml(){
    <div class="skbd">${kbdHtml()}</div>
    <div class="sbox sat"><div class="slab"><span>Aftertouch · pitch bend · mod</span><b id="stAt"></b></div><canvas id="cvAT"></canvas></div>`:""}
   </div><div class="cheek"></div></section>`; }
-function wireStage(){ const kb=document.getElementById("stKey"); if(kb) kb.onclick=openKeyDlg; const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ b.textContent="Pidiendo permiso…"; if(!await startMic()){ refreshStage(); return; } await listInputs(); } STG.src=v; refreshStage(); });
+function wireStage(){ document.querySelectorAll("[data-gv]").forEach(b=>b.onclick=()=>{ STG.gview=b.dataset.gv; STG.gram=null; SPAN.peak=null; refreshStage(); });
+  const cg=document.getElementById("cvGram"); if(cg){ cg.onmousemove=e=>{ const r=cg.getBoundingClientRect(); SPAN.hover=e.clientX-r.left; kickStage(); }; cg.onmouseleave=()=>{ SPAN.hover=null; }; }
+  const kb=document.getElementById("stKey"); if(kb) kb.onclick=openKeyDlg; const fb=document.getElementById("stFull"); if(fb) fb.onclick=()=>toggleFull(); const mb=document.getElementById("stMem"); if(mb) mb.onclick=openMemPanel; document.querySelectorAll("[data-src]").forEach(b=>b.onclick=async()=>{ const v=b.dataset.src; if(v==="mic"&&!STG.audio){ b.textContent="Pidiendo permiso…"; if(!await startMic()){ refreshStage(); return; } await listInputs(); } STG.src=v; refreshStage(); });
   document.querySelectorAll("[data-v2]").forEach(b=>b.onclick=()=>{ STG.arch=b.dataset.v2==="arch"; refreshStage(); });
   const si=document.getElementById("stIn"); if(si) si.onchange=async()=>{ STG.inId=si.value; try{ localStorage.setItem("p6AudioIn",si.value); }catch(e){} if(STG.audio){ try{ STG.audio.st.getTracks().forEach(t=>t.stop()); STG.audio.ac.close(); }catch(e){} STG.audio=null; } if(await startMic()) toast("Entrada de audio: "+(si.options[si.selectedIndex]||{}).text); refreshStage(); };
   document.querySelectorAll("[data-am]").forEach(b=>b.onclick=()=>{ STG.archMode=b.dataset.am; refreshStage(); });
   if(STG.arch) drawArch(true); kickStage(); }
 async function startMic(){ try{ if(STG.inId==null){ try{ STG.inId=localStorage.getItem("p6AudioIn")||""; }catch(e){ STG.inId=""; } } const cons=id=>({audio:{deviceId:id?{exact:id}:undefined,echoCancellation:false,noiseSuppression:false,autoGainControl:false,channelCount:1}}); let st;
   try{ st=await navigator.mediaDevices.getUserMedia(cons(STG.inId)); }catch(e1){ if(e1&&e1.name==="OverconstrainedError"||e1.name==="NotFoundError"){ STG.inId=""; st=await navigator.mediaDevices.getUserMedia(cons("")); } else throw e1; } await listInputs();
-  const ac=new (window.AudioContext||window.webkitAudioContext)(), src=ac.createMediaStreamSource(st), an=ac.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0.6; src.connect(an);
-  STG.audio={ac,an,st,buf:new Float32Array(an.fftSize),fb:new Float32Array(an.frequencyBinCount)}; toast("Escuchando la entrada de audio. Conecta la salida del Prophet a tu interfaz."); return true; }
+  const ac=new (window.AudioContext||window.webkitAudioContext)(), src=ac.createMediaStreamSource(st), an=ac.createAnalyser(); an.fftSize=4096; an.smoothingTimeConstant=0.6; src.connect(an); const an2=ac.createAnalyser(); an2.fftSize=16384; an2.smoothingTimeConstant=0.75; an2.minDecibels=-120; src.connect(an2);
+  STG.audio={ac,an,an2,st,buf:new Float32Array(an.fftSize),fb:new Float32Array(an.frequencyBinCount),fb2:new Float32Array(an2.frequencyBinCount)}; toast("Escuchando la entrada de audio. Conecta la salida del Prophet a tu interfaz."); return true; }
   catch(e){ confirmDlg(`<h3 style="margin-top:0">Falta el permiso de audio</h3><p>Chrome no dejó a la app escuchar la entrada de audio${e&&e.name?` (${esc(e.name)})`:""}.</p><ol><li>En la barra de direcciones, a la izquierda, pulsa el ícono <b>Archivo</b> (o el candado).</li><li>En <b>Micrófono</b> elige <b>Permitir</b>.</li><li>Recarga la página y vuelve a pulsar <b>Audio real</b>.</li></ol><p class="note">Si Chrome te muestra el aviso «Este archivo quiere usar los micrófonos», elige <b>Permitir mientras visito el sitio</b>. Ahí mismo puedes elegir tu interfaz de audio en vez del micrófono del Mac.</p>`); return false; } }
 function autoPitch(buf,sr){ let best=-1,bc=0; const N=buf.length/2; let rms=0; for(let i=0;i<N;i++) rms+=buf[i]*buf[i]; if(Math.sqrt(rms/N)<0.01) return null;
   const lo=Math.floor(sr/2000), hi=Math.floor(sr/30), cs=new Float32Array(hi+1); for(let lag=lo;lag<hi;lag++){ let c=0; for(let i=0;i<N;i++) c+=buf[i]*buf[i+lag]; cs[lag]=c; if(c>bc){bc=c;best=lag;} }
