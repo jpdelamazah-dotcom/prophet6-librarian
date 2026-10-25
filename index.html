@@ -1082,14 +1082,14 @@ const MON={in:0,out:0,lastIn:"",lastInT:0,lastOut:"",lastOutT:0,notes:0,pc:0,nrp
 function midiTxt(d){ const t=d[0]&0xF0, ch=(d[0]&15)+1; if(d[0]===0xF0) return `SysEx (${d.length} bytes)`; if(t===0x90) return `Nota ${noteNm(d[1])} vel ${d[2]} (canal ${ch})`; if(t===0x80) return `Suelta ${noteNm(d[1])} (canal ${ch})`; if(t===0xC0) return `Cambio de programa ${d[1]} (canal ${ch})`; if(t===0xB0) return `CC ${d[1]} = ${d[2]} (canal ${ch})`; if(t===0xD0) return `Aftertouch ${d[1]}`; if(t===0xE0) return `Pitch bend`; return "0x"+d[0].toString(16); }
 function monBlink(){ const i=document.getElementById("monIn"); if(!i) return; i.classList.add("on"); clearTimeout(MON.bt); MON.bt=setTimeout(()=>i.classList.remove("on"),120); }
 function followProg(p,how){ if(state.curProg===p) return; state.curProg=p; state.curProgT=Date.now(); state.curProgHow=how||"pc"; log(`Programa seleccionado en el Prophet: ${slotLabel(p)}${how==="match"?" (reconocido por su contenido)":""}`); STG.edAt=0; state.recipeLoaded=null;
-  if(!state.busy&&state.slots[p]){ select(p,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+p); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); }
+  if(state.slots[p]||state.busy){ select(p,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+p); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); }
   stageHead(); if(!state.slots[p]&&!state.busy){ setTimeout(()=>requestProgram(p,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(p)} que faltaba.`); } }),300); }
   schedulePanelIfLive(); if(state.view==="all") scheduleRender(); }
 // Reconoce qué programa está sonando comparando el edit buffer con la biblioteca (por si el Prophet no envía Program Change)
 function slotKey(dt){ let h=2166136261; for(let i=0;i<dt.length;i++){ h^=dt[i]; h=Math.imul(h,16777619); } return (h>>>0)+":"+dt.length; }
 function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slotIdx||state.slotIdxN!==n){ state.slotIdx=new Map(); for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data) continue; const key=slotKey(v.data); const a=state.slotIdx.get(key)||[]; a.push(+k); state.slotIdx.set(key,a); } state.slotIdxN=n; }
   let hits=state.slotIdx.get(slotKey(data));
-  if(!hits||!hits.length){ const nm=getName(data); if(!nm) return null; let best=null, bd=1e9; for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(v.data[i]!==data[i]) df++; if(df<bd){ bd=df; best=+k; } } return bd<=6?best:null; } if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
+  if(!hits||!hits.length){ const nm=getName(data); if(!nm) return null; let best=null, bd=1e9; for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(v.data[i]!==data[i]) df++; if(df<bd||(df===bd&&+k===state.curProg)){ bd=df; best=+k; } } return bd<=6?best:null; } if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
@@ -2207,7 +2207,7 @@ function curEnv(d,now){ // nivel actual de amp y filtro (nota más reciente)
   const ea=ampE(d), ef=filE(d);
   const amp=k.off==null?envLevel({...ea,on:k.on},now):envLevel({...ea,off:k.off,lvlOff:k.lvlA},now);
   const fil=k.off==null?envLevel({...ef,on:k.on},now):envLevel({...ef,off:k.off,lvlOff:k.lvlF},now);
-  if(k.off!=null&&amp<0.002){ STG.notes.delete(STG.last); STG.last=[...STG.notes.keys()].pop()??null; }
+  if(k.off!=null&&amp<0.00002){ STG.notes.delete(STG.last); STG.last=[...STG.notes.keys()].pop()??null; }
   return {amp,fil,k}; }
 function oscWave(shape,pw,p){ const t=shape/254, tri=1-4*Math.abs(p-0.5), saw=2*p-1, duty=0.5+((pw/254)-0.5)*0.9, pul=p<duty?1:-1;
   return t<=0.5? tri*(1-t*2)+saw*(t*2) : saw*(1-(t-0.5)*2)+pul*((t-0.5)*2); }
@@ -2273,7 +2273,7 @@ function drawChroma(B,spec,curveCfg,energy){ const g=B.g,w=B.w,h=B.h, padB=16, p
   return parts.length; }
 function isHeld(n){ const k=STG.notes.get(n); return !!k&&k.off==null; }
 function cleanNotes(){ const now=performance.now(), d=stageData(); const R=d?learnedEnvT("r",pv(d,P.vcaR)):1; let ch=false;
-  for(const [n,k] of STG.notes){ if(k.off!=null&&now-k.off>Math.min(8000,R*1500+300)){ STG.notes.delete(n); ch=true; } }
+  for(const [n,k] of STG.notes){ if(k.off!=null&&now-k.off>Math.min(20000,R*3200+400)){ STG.notes.delete(n); ch=true; } }
   if(ch&&STG.last!=null&&!STG.notes.has(STG.last)) STG.last=[...STG.notes.keys()].pop()??null;
   document.querySelectorAll("[data-key]").forEach(el=>{ const on=isHeld(+el.dataset.key); if(el.classList.contains("on")!==on) el.classList.toggle("on",on); }); }
 setInterval(cleanNotes,500);
@@ -2317,7 +2317,7 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=
   const NP=720, cur=new Float32Array(NP).fill(-140);
   if(X.mic&&STG.audio){ const an=STG.audio.an2||STG.audio.an, fb=STG.audio.fb2||STG.audio.fb; an.getFloatFrequencyData(fb); const bin=STG.audio.ac.sampleRate/2/fb.length;
     for(let i=0;i<NP;i++){ const f0=20*Math.pow(1000,i/NP), f1=20*Math.pow(1000,(i+1)/NP); let m=-140; for(let b=Math.floor(f0/bin);b<=Math.ceil(f1/bin)&&b<fb.length;b++) m=Math.max(m,fb[b]); cur[i]=m; } }
-  else if(X.spf){ const lin=new Float32Array(NP); const e=Math.max(0.35,X.energy||0.35), ref=X.ref||0.5;   // nivel relativo al parcial más fuerte sin filtrar
+  else if(X.spf){ const lin=new Float32Array(NP); const e=Math.max(1e-6,X.energy||0), ref=X.ref||0.5;   // nivel relativo al parcial más fuerte sin filtrar
     for(const p of X.spf){ const r=p.a/ref; if(r<1e-6) continue; const c=Math.log(p.f/20)/Math.log(1000)*NP; for(let k=Math.max(0,Math.floor(c-14));k<Math.min(NP,c+14);k++){ const d=(k-c)/3.2; lin[k]+=r*r*Math.exp(-d*d)*e*e; } }
     for(let i=0;i<NP;i++){ cur[i]=10*Math.log10(lin[i]+1e-12)-22+(Math.sin(i*12.9898+performance.now()/90)*0.8); } }
   if(!SPAN.peak||SPAN.peak.length!==NP){ SPAN.peak=Float32Array.from(cur); SPAN.avg=Float32Array.from(cur); }
