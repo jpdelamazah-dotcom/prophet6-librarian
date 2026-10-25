@@ -2267,20 +2267,20 @@ function drawAT(X){ const d=X.d; STG.atH=STG.atH||[]; const at=STG.at||0; STG.at
 const SPAN={peak:null,avg:null,n:0,hover:null};
 function spanColors(g,x0,w){ const gr=g.createLinearGradient(x0,0,x0+w,0); const X=f=>Math.log(f/20)/Math.log(1000); gr.addColorStop(0,"#2fae7a"); gr.addColorStop(X(250),"#3cc39a"); gr.addColorStop(X(700),"#5fd3d6"); gr.addColorStop(X(2500),"#a6e3d0"); gr.addColorStop(X(5000),"#ffd36b"); gr.addColorStop(X(9000),"#ff9a3c"); gr.addColorStop(1,"#ff6a2a"); return gr; }
 function fmtHz(f){ return f<1000?Math.round(f)+" Hz":(f/1000).toFixed(1)+" kHz"; }
-function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=h-T-B, DBMAX=-18, DBMIN=-90;
+function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=h-T-B, DBMAX=-18, DBMIN=-114;
   const fx=f=>L+Math.log(f/20)/Math.log(1000)*W, dy=db=>T+(DBMAX-Math.max(DBMIN,Math.min(DBMAX,db)))/(DBMAX-DBMIN)*H;
   g.clearRect(0,0,w,h); g.fillStyle="#0b0c0e"; g.fillRect(0,0,w,h);
   g.lineWidth=1; g.font="9.5px 'IBM Plex Mono',monospace";
   for(let dec=10;dec<=10000;dec*=10) for(let m=1;m<10;m++){ const f=dec*m; if(f<20||f>20000) continue; const x=fx(f); g.strokeStyle=m===1?"rgba(255,255,255,.28)":"rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); }
   g.fillStyle="#c9c9cd"; [[20,"20"],[50,"50"],[100,"100"],[200,"200"],[500,"500"],[1000,"1 k"],[2000,"2 k"],[5000,"5 k"],[10000,"10 k"],[20000,"20 k"]].forEach(([f,t])=>{ g.fillText(t,Math.min(L+W-24,fx(f)+3),T+10); });
-  for(let db=DBMAX;db>=DBMIN;db-=6){ const y=dy(db); g.strokeStyle="rgba(255,255,255,.07)"; g.beginPath(); g.moveTo(L,y); g.lineTo(L+W,y); g.stroke(); g.fillStyle="#8e8e93"; g.fillText(String(db),2,y+3); }
+  for(let db=DBMAX;db>=DBMIN;db-=(H<300?12:6)){ const y=dy(db); g.strokeStyle="rgba(255,255,255,.07)"; g.beginPath(); g.moveTo(L,y); g.lineTo(L+W,y); g.stroke(); g.fillStyle="#8e8e93"; g.fillText(String(db),2,y+3); }
   // espectro actual en 720 puntos log
   const NP=720, cur=new Float32Array(NP).fill(-140);
   if(X.mic&&STG.audio){ const an=STG.audio.an2||STG.audio.an, fb=STG.audio.fb2||STG.audio.fb; an.getFloatFrequencyData(fb); const bin=STG.audio.ac.sampleRate/2/fb.length;
     for(let i=0;i<NP;i++){ const f0=20*Math.pow(1000,i/NP), f1=20*Math.pow(1000,(i+1)/NP); let m=-140; for(let b=Math.floor(f0/bin);b<=Math.ceil(f1/bin)&&b<fb.length;b++) m=Math.max(m,fb[b]); cur[i]=m; } }
-  else if(X.spf){ const lin=new Float32Array(NP); const e=Math.max(0.05,X.energy||0.2);
-    for(const p of X.spf){ if(p.a<1e-5) continue; const c=Math.log(p.f/20)/Math.log(1000)*NP; for(let k=Math.max(0,Math.floor(c-14));k<Math.min(NP,c+14);k++){ const d=(k-c)/3.2; lin[k]+=p.a*p.a*Math.exp(-d*d)*e*e; } }
-    for(let i=0;i<NP;i++){ cur[i]=10*Math.log10(lin[i]+1e-9)-24+(Math.sin(i*12.9898+performance.now()/90)*1.2); } }
+  else if(X.spf){ const lin=new Float32Array(NP); const e=Math.max(0.35,X.energy||0.35), ref=X.ref||0.5;   // nivel relativo al parcial más fuerte sin filtrar
+    for(const p of X.spf){ const r=p.a/ref; if(r<1e-6) continue; const c=Math.log(p.f/20)/Math.log(1000)*NP; for(let k=Math.max(0,Math.floor(c-14));k<Math.min(NP,c+14);k++){ const d=(k-c)/3.2; lin[k]+=r*r*Math.exp(-d*d)*e*e; } }
+    for(let i=0;i<NP;i++){ cur[i]=10*Math.log10(lin[i]+1e-12)-22+(Math.sin(i*12.9898+performance.now()/90)*0.8); } }
   if(!SPAN.peak||SPAN.peak.length!==NP){ SPAN.peak=Float32Array.from(cur); SPAN.avg=Float32Array.from(cur); }
   for(let i=0;i<NP;i++){ SPAN.peak[i]=Math.max(cur[i],SPAN.peak[i]-0.25); SPAN.avg[i]=SPAN.avg[i]*0.97+cur[i]*0.03; }
   const xi=i=>L+i/(NP-1)*W;
@@ -2567,7 +2567,7 @@ function drawStage(){ STG.raf=0; if(!STG._fr||performance.now()-STG._fr>700){ ST
     const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
     if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
     const left=STG.parts.length;
-    drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp});
+    drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp,ref:Math.max(1e-6,...ps.list.map(p=>p.a*resGain(p.f)/2))});
     if((STG.at||0)>0.01) busy=true;
     { const sc2=document.getElementById("stCut"); if(sc2) sc2.textContent=`Filtro ≈ ${fmtHz(cutHz)}`; }
     // envolventes
