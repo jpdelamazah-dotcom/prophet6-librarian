@@ -788,7 +788,17 @@ body.stagefull{overflow:hidden}
 
 .gtabs{display:inline-flex;gap:4px}.gtabs button{font-size:10.5px;letter-spacing:.04em;padding:3px 9px;border-radius:10px;background:#1f2125!important;color:#a9abb1!important;border:1px solid #2c2d31!important;text-transform:none}.gtabs button.act{background:#3cc39a!important;color:#04201a!important;font-weight:600}
 #cvGram{cursor:crosshair}
-.stage:not(.full):not(.arch) .sface{grid-template-rows:auto 300px 118px 118px!important}
+/* v47: espectro + filtro unidos; sin voces, LFO ni armónicos */
+.stage:not(.full):not(.arch) .sface{grid-template-columns:1fr 1fr!important;grid-template-rows:auto 380px 140px!important}
+.stage:not(.full):not(.arch) .sgram{grid-column:1/-1!important;grid-row:2!important}
+.stage:not(.full):not(.arch) .sscope{grid-column:1!important;grid-row:3!important}
+.stage:not(.full):not(.arch) .senv{grid-column:2!important;grid-row:3!important}
+.stage.full .sface{grid-template-columns:1.4fr 1fr!important;grid-template-rows:auto minmax(0,2.4fr) minmax(0,1fr) 120px!important}
+.stage.full .sgram{grid-column:1/-1!important;grid-row:2!important}
+.stage.full .sscope{grid-column:1!important;grid-row:3!important}.stage.full .senv{grid-column:2!important;grid-row:3!important}
+.stage.full .skbd{grid-column:1!important;grid-row:4!important}.stage.full .sat{grid-column:2!important;grid-row:4!important;display:block}
+@media (max-width:1100px){ .stage:not(.full):not(.arch) .sface{grid-template-columns:1fr!important;grid-template-rows:auto 300px 120px 120px!important} .stage:not(.full):not(.arch) .sscope{grid-column:1!important;grid-row:3!important}.stage:not(.full):not(.arch) .senv{grid-column:1!important;grid-row:4!important}
+ .stage.full .sface{grid-template-columns:1fr 1fr!important;grid-template-rows:auto 340px 160px 110px 130px!important;overflow:auto} .stage.full .skbd{grid-column:1/-1!important;grid-row:4!important}.stage.full .sat{grid-column:1/-1!important;grid-row:5!important} }
 </style>
 </head>
 <body>
@@ -2247,12 +2257,13 @@ function drawAT(X){ const d=X.d; STG.atH=STG.atH||[]; const at=STG.at||0; STG.at
 /* ===== Analizador de espectro estilo SPAN (frecuencia × dB, capas de color, picos, comparación) ===== */
 const SPAN={peak:null,avg:null,n:0,hover:null};
 function spanColors(g,x0,w){ const gr=g.createLinearGradient(x0,0,x0+w,0); const X=f=>Math.log(f/20)/Math.log(1000); gr.addColorStop(0,"#2fae7a"); gr.addColorStop(X(250),"#3cc39a"); gr.addColorStop(X(700),"#5fd3d6"); gr.addColorStop(X(2500),"#a6e3d0"); gr.addColorStop(X(5000),"#ffd36b"); gr.addColorStop(X(9000),"#ff9a3c"); gr.addColorStop(1,"#ff6a2a"); return gr; }
-function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-6, H=h-T-B, DBMAX=-18, DBMIN=-90;
+function fmtHz(f){ return f<1000?Math.round(f)+" Hz":(f/1000).toFixed(1)+" kHz"; }
+function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=h-T-B, DBMAX=-18, DBMIN=-90;
   const fx=f=>L+Math.log(f/20)/Math.log(1000)*W, dy=db=>T+(DBMAX-Math.max(DBMIN,Math.min(DBMAX,db)))/(DBMAX-DBMIN)*H;
   g.clearRect(0,0,w,h); g.fillStyle="#0b0c0e"; g.fillRect(0,0,w,h);
   g.lineWidth=1; g.font="9.5px 'IBM Plex Mono',monospace";
   for(let dec=10;dec<=10000;dec*=10) for(let m=1;m<10;m++){ const f=dec*m; if(f<20||f>20000) continue; const x=fx(f); g.strokeStyle=m===1?"rgba(255,255,255,.28)":"rgba(255,255,255,.08)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); }
-  g.fillStyle="#c9c9cd"; [[20,"20"],[50,"50"],[100,"100"],[200,"200"],[500,"500"],[1000,"1 k"],[2000,"2 k"],[5000,"5 k"],[10000,"10 k"],[20000,"20 k"]].forEach(([f,t])=>{ g.fillText(t,Math.min(w-26,fx(f)+3),T+10); });
+  g.fillStyle="#c9c9cd"; [[20,"20"],[50,"50"],[100,"100"],[200,"200"],[500,"500"],[1000,"1 k"],[2000,"2 k"],[5000,"5 k"],[10000,"10 k"],[20000,"20 k"]].forEach(([f,t])=>{ g.fillText(t,Math.min(L+W-24,fx(f)+3),T+10); });
   for(let db=DBMAX;db>=DBMIN;db-=6){ const y=dy(db); g.strokeStyle="rgba(255,255,255,.07)"; g.beginPath(); g.moveTo(L,y); g.lineTo(L+W,y); g.stroke(); g.fillStyle="#8e8e93"; g.fillText(String(db),2,y+3); }
   // espectro actual en 720 puntos log
   const NP=720, cur=new Float32Array(NP).fill(-140);
@@ -2271,6 +2282,22 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-6, H=h
   // promedio y picos
   g.beginPath(); for(let i=0;i<NP;i++){ const x=xi(i), y=dy(SPAN.avg[i]); i?g.lineTo(x,y):g.moveTo(x,y); } g.strokeStyle="rgba(255,255,255,.55)"; g.lineWidth=1.2; g.stroke();
   g.beginPath(); for(let i=0;i<NP;i++){ const x=xi(i), y=dy(SPAN.peak[i]); i?g.lineTo(x,y):g.moveTo(x,y); } g.strokeStyle="rgba(255,90,70,.45)"; g.setLineDash([3,3]); g.lineWidth=1; g.stroke(); g.setLineDash([]);
+  // partículas (cómo se va formando el sonido) sobre el espectro
+  { const parts=STG.parts, now=performance.now(), e=X.mic?1:(X.energy||0.15);
+    if(X.spf) for(const p of X.spf){ const k=Math.min(5,p.a*e*11); let n=Math.floor(k)+(Math.random()<k%1?1:0);
+      for(let i=0;i<n&&parts.length<2600;i++){ const fr=p.f*Math.pow(2,(Math.random()-.5)*0.6); parts.push({x:Math.log(Math.max(20,fr)/20)/Math.log(1000),y:Math.pow(Math.random(),1.6)*Math.min(1,p.a*1.6+0.08)*e,vy:0.00015+Math.random()*0.0004,b:now,life:500+Math.random()*900,r:0.7+Math.random()*1.5}); } }
+    g.save(); g.globalCompositeOperation="lighter";
+    for(let i=parts.length-1;i>=0;i--){ const p=parts[i], age=now-p.b; if(age>p.life){ parts.splice(i,1); continue; } p.y+=p.vy*16; const a=Math.sin(Math.PI*age/p.life)*0.45, hue=Math.max(0,Math.min(195,p.x*230-25));
+      g.fillStyle=`hsla(${hue},95%,60%,${a})`; g.beginPath(); g.arc(L+p.x*W,T+H-Math.min(1,p.y)*H*0.9,p.r,0,7); g.fill(); } g.restore(); }
+  // respuesta en frecuencia del filtro (eje derecho, dB del filtro)
+  if(X.cfg){ const FT=12, FB=-48, fyy=db=>T+(FT-Math.max(FB,Math.min(FT,db)))/(FT-FB)*H, fdb=f=>20*Math.log10(Math.max(1e-4,filtH(f,X.cfg)));
+    g.font="9.5px 'IBM Plex Mono',monospace"; g.fillStyle="#ff9a6b"; g.textAlign="right"; for(const db of [12,0,-12,-24,-36,-48]){ const y=fyy(db); g.fillText((db>0?"+":"")+db,w-3,y+3); } g.textAlign="left";
+    g.strokeStyle="rgba(255,106,61,.25)"; g.setLineDash([2,4]); g.beginPath(); g.moveTo(L,fyy(0)); g.lineTo(L+W,fyy(0)); g.stroke(); g.setLineDash([]);
+    g.beginPath(); for(let i=0;i<=240;i++){ const f=20*Math.pow(1000,i/240), x=L+i/240*W, y=fyy(fdb(f)); i?g.lineTo(x,y):g.moveTo(x,y); }
+    g.strokeStyle="#ff6a3d"; g.lineWidth=2.4; g.shadowColor="rgba(255,106,61,.6)"; g.shadowBlur=10; g.stroke(); g.shadowBlur=0;
+    const dot=(f,lab)=>{ const x=fx(Math.max(20,Math.min(20000,f))), y=fyy(fdb(f)); g.fillStyle="#e8e8ea"; g.beginPath(); g.arc(x,y,5,0,7); g.fill(); g.strokeStyle="#1a1a1c"; g.lineWidth=1.5; g.stroke();
+      g.font="600 10px 'IBM Plex Mono',monospace"; const t=`${lab} ${fmtHz(f)}`, tw=g.measureText(t).width, bx=Math.max(L+2,Math.min(L+W-tw-8,x-tw/2-3)); g.fillStyle="rgba(60,22,10,.85)"; g.fillRect(bx,y+9,tw+6,14); g.fillStyle="#ffb08a"; g.fillText(t,bx+3,y+20); };
+    dot(X.cfg.lp,"LP"); if(X.cfg.hpOn) dot(X.cfg.hp,"HP"); }
   // canción objetivo (si se escuchó)
   if(TGT.fp){ const sh=TGT.fp.espectro_db_48bandas_30Hz_16kHz, top=Math.max(...Array.from(SPAN.avg)); g.beginPath(); sh.forEach((v,i)=>{ const x=fx(BF[i]), y=dy(top+v-6); i?g.lineTo(x,y):g.moveTo(x,y); }); g.strokeStyle="rgba(191,90,242,.85)"; g.lineWidth=2; g.setLineDash([6,4]); g.stroke(); g.setLineDash([]); }
   // picos principales con nota
@@ -2281,7 +2308,7 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-6, H=h
   if(SPAN.hover!=null&&SPAN.hover>L){ const x=SPAN.hover, f=20*Math.pow(1000,(x-L)/W), i=Math.max(0,Math.min(NP-1,Math.round((x-L)/W*(NP-1)))), v=cur[i];
     g.strokeStyle="rgba(255,255,255,.5)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); const t=`${f<1000?Math.round(f)+" Hz":(f/1000).toFixed(2)+" kHz"} · ${noteNm(Math.round(69+12*Math.log2(f/440)))} · ${v>-139?v.toFixed(0)+" dB":"—"}`; g.font="11px 'IBM Plex Mono',monospace"; const tw=g.measureText(t).width; const bx=Math.min(x+8,w-tw-12); g.fillStyle="rgba(20,20,24,.92)"; g.fillRect(bx,T+16,tw+10,18); g.fillStyle="#fff"; g.fillText(t,bx+5,T+29); }
   // leyenda
-  g.font="10px 'IBM Plex Sans',sans-serif"; const lg=[["ahora",null],["promedio","rgba(255,255,255,.7)"],["picos","rgba(255,90,70,.8)"]].concat(TGT.fp?[["canción","rgba(191,90,242,.95)"]]:[]); let lx=L+W-8; g.textAlign="right";
+  g.font="10px 'IBM Plex Sans',sans-serif"; const lg=[["ahora",null],["promedio","rgba(255,255,255,.7)"],["picos","rgba(255,90,70,.8)"]].concat(X.cfg?[["filtro (dB der.)","#ff6a3d"]]:[]).concat(TGT.fp?[["canción","rgba(191,90,242,.95)"]]:[]); let lx=L+W-8; g.textAlign="right";
   for(const [t,c] of lg.reverse()){ g.fillStyle=c||"#5fd3d6"; g.fillText("— "+t,lx,h-4); lx-=g.measureText("— "+t).width+12; } g.textAlign="left"; }
 function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
   const G=fitCanvas(document.getElementById("cvGram"));
@@ -2484,15 +2511,11 @@ function stageHtml(){
    <div class="sbox sarch"><div class="archtabs"><button class="${STG.archMode!=="map"?"act":""}" data-am="cards">Paso a paso</button><button class="${STG.archMode==="map"?"act":""}" data-am="map">Mapa de la señal</button></div><div id="archSvg"></div></div></div><div class="cheek"></div></section>`;
   return `<section class="stage${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
    <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><button class="smem" id="stMem" title="Lo que la app ha aprendido de tu Prophet real"><i></i>Memoria <b>${MEM.obs.length}</b></button><span class="satmini" id="stAtMini" title="Aftertouch: presión de la tecla"><i></i><small>AT</small></span><span class="sled" id="stLed"></span></div>
-   <div class="sbox sspec"><div class="slab"><span>Respuesta en frecuencia · filtro y armónicos</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
    <div class="sbox sscope"><div class="slab"><span>Oscilograma</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
    <div class="sbox senv"><div class="slab"><span>Envolvente ADSR</span><b><i class="kf"></i>Filtro <i class="ka"></i>Vol.</b></div><canvas id="cvEnv"></canvas></div>
    <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button id="stKey" title="Escucha lo que suena y te dice en qué tonalidad está">Tonalidad</button><button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
-   <div class="sbox sgram"><div class="slab"><span class="gtabs"><button class="${STG.gview!=="sono"?"act":""}" data-gv="span">Espectro (frecuencia × dB)</button><button class="${STG.gview==="sono"?"act":""}" data-gv="sono">Sonograma (en el tiempo)</button></span><b>${STG.gview==="sono"?"tiempo → · color = intensidad":"pasa el mouse para ver Hz, nota y dB"}</b></div><canvas id="cvGram"></canvas></div>
+   <div class="sbox sgram"><div class="slab"><span class="gtabs"><button class="${STG.gview!=="sono"?"act":""}" data-gv="span">Espectro + filtro</button><button class="${STG.gview==="sono"?"act":""}" data-gv="sono">Sonograma (en el tiempo)</button></span><b><span id="stCut"></span>${STG.gview==="sono"?" · tiempo → · color = intensidad":" · pasa el mouse para ver Hz, nota y dB"}</b></div><canvas id="cvGram"></canvas></div>
    ${STG.full?`
-   <div class="sbox svoices"><div class="slab"><span>6 voces del Prophet</span><b>nivel por nota</b></div><canvas id="cvVoices"></canvas></div>
-   <div class="sbox slfo"><div class="slab"><span>LFO</span><b id="stLfo"></b></div><canvas id="cvLfo"></canvas></div>
-   <div class="sbox smix"><div class="slab"><span>Armónicos</span><b id="stHarm"></b></div><canvas id="cvMix"></canvas></div>
    <div class="skbd">${kbdHtml()}</div>
    <div class="sbox sat"><div class="slab"><span>Aftertouch · pitch bend · mod</span><b id="stAt"></b></div><canvas id="cvAT"></canvas></div>`:""}
   </div><div class="cheek"></div></section>`; }
@@ -2516,17 +2539,17 @@ function fitCanvas(cv){ if(!cv) return null; const r=cv.getBoundingClientRect(),
 function grid(g,w,h){ g.clearRect(0,0,w,h); if(!(w>8&&h>8)) return; g.strokeStyle="rgba(255,255,255,.06)"; g.lineWidth=1; for(let x=0;x<=w;x+=w/8){ g.beginPath(); g.moveTo(x,0); g.lineTo(x,h); g.stroke(); } for(let y=0;y<=h;y+=h/4){ g.beginPath(); g.moveTo(0,y); g.lineTo(w,y); g.stroke(); } }
 function kickStage(){ if(!STG.raf) STG.raf=requestAnimationFrame(drawStage); }
 function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if(!sc||document.hidden) return; const now=performance.now(), d=stageData();
-  const A=fitCanvas(sc), B=fitCanvas(document.getElementById("cvSpec")), C=fitCanvas(document.getElementById("cvEnv")); let busy=false;
-  if(!A||!B||!C||A.w<20||B.w<40||C.w<20||A.h<10||B.h<20||C.h<10){ STG.raf=0; setTimeout(kickStage,300); return; }
+  const A=fitCanvas(sc), B=null, C=fitCanvas(document.getElementById("cvEnv")); let busy=false;
+  if(!A||!C||A.w<20||C.w<20||A.h<10||C.h<10){ STG.raf=0; setTimeout(kickStage,300); return; }
   const led=document.getElementById("stLed");
   if(STG.src==="mic"&&STG.audio){ const {an,buf,fb,ac}=STG.audio; an.getFloatTimeDomainData(buf); an.getFloatFrequencyData(fb);
     let z=0; for(let i=1;i<buf.length/2;i++){ if(buf[i-1]<0&&buf[i]>=0){ z=i; break; } }
     grid(A.g,A.w,A.h); A.g.strokeStyle="#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.6)"; A.g.shadowBlur=8; A.g.beginPath(); const n=Math.min(1024,buf.length-z); for(let i=0;i<n;i++){ const x=i/n*A.w, y=A.h/2-buf[z+i]*A.h*0.45; i?A.g.lineTo(x,y):A.g.moveTo(x,y); } A.g.stroke(); A.g.shadowBlur=0;
     const hz=autoPitch(buf,ac.sampleRate); document.getElementById("stHz").textContent=hz?`${hz.toFixed(1)} Hz · ${noteNm(Math.round(69+12*Math.log2(hz/440)))}`:"Sin señal";
     const sr=ac.sampleRate, sp=[]; for(let i=0;i<140;i++){ const f=FMIN*Math.exp(i/140*LFR), bi=Math.round(f/(sr/2)*fb.length); let db=fb[bi]??-140; if(MEM.noise){ const nb=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); const nd=MEM.noise.bands[Math.max(0,Math.min(NB-1,nb))]; const lin=Math.pow(10,db/10)-Math.pow(10,(nd+3)/10); db=lin>0?10*Math.log10(lin):-140; } const v=Math.max(0,(db+95)/75); if(v>0.02) sp.push({f,a:v*0.35}); }
-    const dd=stageData(); drawChroma(B,sp,dd?filtCfg(dd,0.6):null,1);
+    const dd=stageData();
     if(dd) drawExtras({d:dd,mic:true,spf:sp,cfg:filtCfg(dd,0.6),ce:{},now,amp:Math.min(1,sp.reduce((m,p)=>Math.max(m,p.a*2.5),0)),energy:1});
-    document.getElementById("stCut").textContent="Audio real · 20 Hz – 20 kHz"; if(led) led.classList.toggle("on",!!hz); busy=true; }
+    { const sc2=document.getElementById("stCut"); if(sc2) sc2.textContent=dd?`Audio real · filtro ≈ ${fmtHz(filtCfg(dd,0.6).lp)}`:"Audio real"; } if(led) led.classList.toggle("on",!!hz); busy=true; }
   else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69+pitchOff(pv(d,P.osc1Freq)))/12), amp=ce.amp==null?0.85:ce.amp;
     const {y,cutHz}=simSignal(d,f0,ce.fil==null?0.6:ce.fil);
     grid(A.g,A.w,A.h); A.g.strokeStyle=ce.amp==null?"rgba(255,106,61,.55)":"#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.7)"; A.g.shadowBlur=ce.amp==null?0:10;
@@ -2534,10 +2557,10 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     document.getElementById("stHz").textContent=ce.amp==null?"Toca una tecla del Prophet":`${noteNm(n)} · ${f0.toFixed(1)} Hz`;
     const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
     if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
-    const left=drawChroma(B,spf,cfg,ce.amp==null?0.18:ce.amp);
+    const left=STG.parts.length;
     drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp});
     if((STG.at||0)>0.01) busy=true;
-    document.getElementById("stCut").textContent=`Filtro ≈ ${cutHz<1000?Math.round(cutHz)+" Hz":(cutHz/1000).toFixed(1)+" kHz"}`;
+    { const sc2=document.getElementById("stCut"); if(sc2) sc2.textContent=`Filtro ≈ ${fmtHz(cutHz)}`; }
     // envolventes
     grid(C.g,C.w,C.h); const drawEnv=(e,col,lvl,k,isAmp)=>{ const W=C.w, H=C.h-6, A=learnedEnvT("a",e.a), D=learnedEnvT("d",e.d), S=learnedSus(e.s), R=learnedEnvT("r",e.r);
       const f=t=>0.06+Math.log10(1+t*8), Dd=D*1.2, Rd=R*1.2, wa=f(A), wd=S>0.97?0.05:f(Dd), wh=0.45, wr=f(Rd), k2=W/(wa+wd+wh+wr), xa=wa*k2, xd=xa+wd*k2, xh=xd+wh*k2, Y=v=>H-v*(H-4);
