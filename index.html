@@ -2422,8 +2422,8 @@ function stageHtml(){
   return `<section class="stage${STG.full?" full":""}" id="stage"><div class="cheek"></div><div class="sface">
    <div class="slcd"><div class="slcdn" id="stNum">${s!=null?slotLabel(s):"---"}</div><div class="slcdt"><b id="stName">${esc(nm||"")}</b><span id="stSub">${d?esc(waveLabel(d)):"Conecta el Prophet o elige un sonido"}</span></div><button class="smem" id="stMem" title="Lo que la app ha aprendido de tu Prophet real"><i></i>Memoria <b>${MEM.obs.length}</b></button><span class="satmini" id="stAtMini" title="Aftertouch: presión de la tecla"><i></i><small>AT</small></span><span class="sled" id="stLed"></span></div>
    <div class="sbox sspec"><div class="slab"><span>Respuesta en frecuencia · filtro y armónicos</span><b id="stCut"></b></div><canvas id="cvSpec"></canvas></div>
-   <div class="sbox sscope"><div class="slab"><span>Forma de onda · oscilograma</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
-   <div class="sbox senv"><div class="slab"><span>Envolvente ADSR</span><b><i class="kf"></i>Filtro <i class="ka"></i>Volumen</b></div><canvas id="cvEnv"></canvas></div>
+   <div class="sbox sscope"><div class="slab"><span>Oscilograma</span><b id="stHz">Toca una tecla</b></div><canvas id="cvScope"></canvas></div>
+   <div class="sbox senv"><div class="slab"><span>Envolvente ADSR</span><b><i class="kf"></i>Filtro <i class="ka"></i>Vol.</b></div><canvas id="cvEnv"></canvas></div>
    <div class="ssrc"><button class="${STG.src==="sim"?"act":""}" data-src="sim" title="Dibuja la onda a partir de los parámetros del sonido y las teclas que tocas">Simulado</button><button class="${STG.src==="mic"?"act":""}" data-src="mic" title="Escucha el audio real del Prophet por la entrada de tu interfaz">Audio real</button>${ins}<button id="stKey" title="Escucha lo que suena y te dice en qué tonalidad está">Tonalidad</button><button data-v2="arch" title="Cómo se construye el sonido: osciladores, filtro, envolventes, movimiento, arpegiador, voces y efectos">Cómo se construye</button><button class="sfull" id="stFull" title="${STG.full?"Salir de pantalla completa (Esc)":"Pantalla completa"}">${STG.full?"✕ Salir":"⛶ Pantalla completa"}</button></div>
    <div class="sbox sgram"><div class="slab"><span>Espectrograma · sonograma</span><b>tiempo → · color = intensidad</b></div><canvas id="cvGram"></canvas></div>
    ${STG.full?`
@@ -2474,15 +2474,17 @@ function drawStage(){ STG.raf=0; const sc=document.getElementById("cvScope"); if
     if((STG.at||0)>0.01) busy=true;
     document.getElementById("stCut").textContent=`Filtro ≈ ${cutHz<1000?Math.round(cutHz)+" Hz":(cutHz/1000).toFixed(1)+" kHz"}`;
     // envolventes
-    grid(C.g,C.w,C.h); const drawEnv=(e,col,lvl,k)=>{ const tot=envT(e.a)+envT(e.d)+envT(e.r)+0.0001, sus=0.25, W=C.w, H=C.h-6;
-      const sx=t=>Math.log10(1+t*1000)/Math.log10(1+tot*1000)*(W*0.75), xa=sx(envT(e.a)), xd=sx(envT(e.a)+envT(e.d)), xs=xd+W*sus*0.0+ (W*0.75-xd)*0, xr=W, sl=H-(e.s/127)*(H-4);
-      const xsEnd=Math.max(xd+20,W*0.72);
-      C.g.strokeStyle=col; C.g.lineWidth=2; C.g.beginPath(); C.g.moveTo(0,H); C.g.lineTo(Math.max(xa,2),4); C.g.lineTo(Math.max(xd,xa+2),sl); C.g.lineTo(xsEnd,sl); C.g.lineTo(xr,H); C.g.stroke();
-      C.g.fillStyle=col.replace(")",",.12)").replace("rgb","rgba"); C.g.lineTo(0,H); C.g.fill();
-      if(lvl!=null&&k){ let px; const t=(now-k.on)/1000; if(k.off==null){ px=t<envT(e.a)?(t/envT(e.a))*xa: t<envT(e.a)+envT(e.d)?xa+(t-envT(e.a))/envT(e.d)*(xd-xa): xd+Math.min(1,(t-envT(e.a)-envT(e.d))/1.5)*(xsEnd-xd); }
-        else { const tr=(now-k.off)/1000; px=xsEnd+Math.min(1,tr/envT(e.r))*(xr-xsEnd); }
-        const py=H-lvl*(H-4); C.g.fillStyle="#fff"; C.g.beginPath(); C.g.arc(px,py,4.5,0,7); C.g.fill(); C.g.strokeStyle=col; C.g.lineWidth=2; C.g.stroke(); } };
-    drawEnv(filE(d),"rgb(232,176,74)",ce.fil,ce.k); drawEnv(ampE(d),"rgb(108,206,160)",ce.amp,ce.k);
+    grid(C.g,C.w,C.h); const drawEnv=(e,col,lvl,k,isAmp)=>{ const W=C.w, H=C.h-6, A=learnedEnvT("a",e.a), D=learnedEnvT("d",e.d), S=learnedSus(e.s), R=learnedEnvT("r",e.r);
+      const f=t=>0.06+Math.log10(1+t*8), Dd=D*1.2, Rd=R*1.2, wa=f(A), wd=S>0.97?0.05:f(Dd), wh=0.45, wr=f(Rd), k2=W/(wa+wd+wh+wr), xa=wa*k2, xd=xa+wd*k2, xh=xd+wh*k2, Y=v=>H-v*(H-4);
+      const lvAt=t=>t<A?t/A:S+(1-S)*Math.exp(-(t-A)/(D/4)), L0=k&&k.off!=null?(isAmp?k.lvlA:k.lvlF)??lvAt(Dd+A):lvAt(A+Dd);
+      C.g.strokeStyle=col; C.g.lineWidth=2; C.g.beginPath(); C.g.moveTo(0,Y(0));
+      for(let i=1;i<=12;i++) C.g.lineTo(i/12*xa,Y(i/12)); for(let i=1;i<=16;i++){ const t=A+i/16*Dd; C.g.lineTo(xa+i/16*(xd-xa),Y(lvAt(t))); } C.g.lineTo(xh,Y(lvAt(A+Dd)));
+      if(k&&k.off!=null) C.g.lineTo(xh,Y(L0)); for(let i=1;i<=16;i++){ const tr=i/16*Rd; C.g.lineTo(xh+i/16*(W-xh),Y(L0*Math.exp(-tr/(R/4)))); } C.g.stroke();
+      C.g.fillStyle=col.replace(")",",.12)").replace("rgb","rgba"); C.g.lineTo(W,Y(0)); C.g.lineTo(0,Y(0)); C.g.fill();
+      if(lvl!=null&&k){ let px,py; if(k.off==null){ const t=(now-k.on)/1000; if(t<A){ px=t/A*xa; py=Y(t/A); } else if(t<A+Dd){ px=xa+(t-A)/Dd*(xd-xa); py=Y(lvAt(t)); } else { px=xd+Math.min(1,(t-A-Dd)/1.5)*(xh-xd); py=Y(lvAt(t)); } }
+        else { const tr=(now-k.off)/1000; px=xh+Math.min(1,tr/Rd)*(W-xh); py=Y(L0*Math.exp(-Math.min(tr,Rd)/(R/4))); }
+        C.g.fillStyle="#fff"; C.g.beginPath(); C.g.arc(px,py,4.5,0,7); C.g.fill(); C.g.strokeStyle=col; C.g.lineWidth=2; C.g.stroke(); } };
+    drawEnv(filE(d),"rgb(232,176,74)",ce.fil,ce.k,false); drawEnv(ampE(d),"rgb(108,206,160)",ce.amp,ce.k,true);
     if(led) led.classList.toggle("on",ce.amp!=null&&STG.notes.size>0); busy=busy||STG.notes.size>0||left>0||(STG.at||0)>0.01; }
   if(busy||STG.src==="mic"||STG.full||document.getElementById("cvGram")) STG.raf=requestAnimationFrame(drawStage); }
 function stageHead(){ const el=document.getElementById("stNum")||{}; const s=stageSlot(); const d=stageData();
