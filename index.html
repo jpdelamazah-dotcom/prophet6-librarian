@@ -1080,6 +1080,14 @@ function send(b){ if(!state.out) throw new Error("Sin salida MIDI");
 const MON={in:0,out:0,lastIn:"",lastInT:0,lastOut:"",lastOutT:0,notes:0,pc:0,nrpn:0,sysex:0};
 function midiTxt(d){ const t=d[0]&0xF0, ch=(d[0]&15)+1; if(d[0]===0xF0) return `SysEx (${d.length} bytes)`; if(t===0x90) return `Nota ${noteNm(d[1])} vel ${d[2]} (canal ${ch})`; if(t===0x80) return `Suelta ${noteNm(d[1])} (canal ${ch})`; if(t===0xC0) return `Cambio de programa ${d[1]} (canal ${ch})`; if(t===0xB0) return `CC ${d[1]} = ${d[2]} (canal ${ch})`; if(t===0xD0) return `Aftertouch ${d[1]}`; if(t===0xE0) return `Pitch bend`; return "0x"+d[0].toString(16); }
 function monBlink(){ const i=document.getElementById("monIn"); if(!i) return; i.classList.add("on"); clearTimeout(MON.bt); MON.bt=setTimeout(()=>i.classList.remove("on"),120); }
+function followProg(p,how){ if(state.curProg===p) return; state.curProg=p; state.curProgT=Date.now(); state.curProgHow=how||"pc"; log(`Programa seleccionado en el Prophet: ${slotLabel(p)}${how==="match"?" (reconocido por su contenido)":""}`); STG.edAt=0; state.recipeLoaded=null;
+  if(!state.busy&&state.slots[p]){ select(p,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+p); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); }
+  stageHead(); if(!state.slots[p]&&!state.busy){ setTimeout(()=>requestProgram(p,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(p)} que faltaba.`); } }),300); }
+  schedulePanelIfLive(); if(state.view==="all") scheduleRender(); }
+// Reconoce qué programa está sonando comparando el edit buffer con la biblioteca (por si el Prophet no envía Program Change)
+function slotKey(dt){ let h=2166136261; for(let i=0;i<dt.length;i++){ h^=dt[i]; h=Math.imul(h,16777619); } return (h>>>0)+":"+dt.length; }
+function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slotIdx||state.slotIdxN!==n){ state.slotIdx=new Map(); for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data) continue; const key=slotKey(v.data); const a=state.slotIdx.get(key)||[]; a.push(+k); state.slotIdx.set(key,a); } state.slotIdxN=n; }
+  const hits=state.slotIdx.get(slotKey(data)); if(!hits||!hits.length) return null; if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
@@ -1093,7 +1101,8 @@ function onMsg(e){
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ state.curProg=(state.bankSel||0)*100+d[1]; state.curProgT=Date.now(); log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; state.recipeLoaded=null; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ followProg((state.bankSel||0)*100+d[1]); return; }
+  if(false){ log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; state.recipeLoaded=null; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
@@ -1104,12 +1113,12 @@ function onMsg(e){
   if(d[0]!==0xF0||d[1]!==DSI||d[2]!==P6) return;
   const t=d[3];
   if(t===0x02){ const slot=d[4]*100+d[5]; const data=unpack(Array.from(d.slice(6,d.length-1)));
-    state.slots[slot]={data,t:Date.now()}; resolveWait({slot,data}); renderSlot(slot); }
+    state.slots[slot]={data,t:Date.now()}; state.slotIdx=null; resolveWait({slot,data}); renderSlot(slot); }
   else if(t===0x0F){ const bytes=Array.from(d.slice(4,d.length-1)), DI=[1025,1024,1026,1027,1028,1029,1030,1031,1032,1033,1035,1039,1037,1040,1044,1041,1042,1043], GMAX={1025:24,1024:100,1026:17,1027:4,1028:1,1029:4,1030:2,1031:1,1032:1,1033:3,1035:1,1039:3,1037:2,1040:3,1044:16,1041:7,1042:3,1043:1};
       const nibV=[]; for(let i=0;i*2+1<bytes.length;i++) nibV.push((bytes[2*i]&15)|((bytes[2*i+1]&15)<<4));
       const score=a=>DI.reduce((n,k,i)=>n+(a[i]!=null&&a[i]<=GMAX[k]?1:0),0); const useNib=score(nibV)>=score(bytes); const raw=useNib?nibV:bytes; const g={};
       raw.forEach((v,i)=>{ const k=DI[i]; if(k!=null) g[k]=v<=GMAX[k]?v:null; }); state.globalsRaw=raw; state.globalsBytes=bytes; state.globalsFmt=useNib?"nibbles":"bytes"; state.globalsRead=g; state.globalsReadAt=Date.now(); log("Configuración global leída del Prophet."); if(state.gWaiter){ const w=state.gWaiter; state.gWaiter=null; w(g); } return; }
-  else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data});
+  else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data}); { const m=matchEdit(data); if(m!=null&&m!==state.curProg&&!(state.curProgHow==="app"&&Date.now()-(state.curProgT||0)<3000)&&!state.busy) followProg(m,"match"); }
     if(prev&&!state.learn) editFlash(prev,data);
     showLcd("EDIT",getName(data)||"(sin nombre)","Edit buffer"); if(!state.quietEdit) log(`Edit buffer recibido: "${getName(data)}"`);
     if(state.view==="panel"&&state.panelSrc==="edit") renderPanel(); }
@@ -1144,7 +1153,7 @@ function audition(slot,withNotes){
   if(state.pending.has(slot)&&!state.safe){ send(editDump(state.pending.get(slot))); showLcd(slotLabel(slot),displayName(slot),"Pendiente → edit buffer"); return; }
   send([0xB0|ch,0,b]); send([0xB0|ch,32,b]); send([0xC0|ch,p]);
   if(state.bpmLock) setTimeout(()=>sendBpm(state.bpmLockVal||120),250);
-  if(state.allowPC||!state.safe){ const old=state.curProg; state.curProg=slot; schedulePanelIfLive(); if(old!=null) renderSlot(old); renderSlot(slot); }
+  if(state.allowPC||!state.safe){ const old=state.curProg; state.curProg=slot; state.curProgHow="app"; state.curProgT=Date.now(); schedulePanelIfLive(); if(old!=null) renderSlot(old); renderSlot(slot); }
   showLcd(slotLabel(slot),displayName(slot),catOf(slot)||"Not Assigned");
   if(!state.pending.has(slot)) previewSlot(slot,ch,!!withNotes);
 }
@@ -2074,7 +2083,7 @@ async function saveRecipeAsPreset(r){
   if(currentData(s)&&!/^basic program$/i.test(getName(currentData(s))||"")&&!await confirmDlg(`<p>El ${slotLabel(s)} tiene «${esc(displayName(s))}». ¿Reemplazarlo? (se descarga un respaldo antes)</p>`)) return;
   if(currentData(s)) download(`Prophet6-respaldo-${slotLabel(s)}.syx`,programDump(s,currentData(s)));
   send(programDump(s,rd.data)); await sleep(300); state.slots[s]={data:Uint8Array.from(rd.data),t:Date.now()}; state.pending.delete(s); orgCache.clear(); save();
-  const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; const [bk,pg]=bankProg(s); send([0xB0|ch,0,bk]); send([0xB0|ch,32,bk]); send([0xC0|ch,pg]); state.curProg=s; state.recipeLoaded=null; select(s);
+  const ch=Math.max(1,Math.min(16,parseInt($("#chan").value)||1))-1; const [bk,pg]=bankProg(s); send([0xB0|ch,0,bk]); send([0xB0|ch,32,bk]); send([0xC0|ch,pg]); state.curProgHow="app"; state.curProgT=Date.now(); state.curProg=s; state.recipeLoaded=null; select(s);
   const v=await requestProgram(s,2500); toast(v&&getName(v.data)===getName(rd.data)?`✓ Guardado en el ${slotLabel(s)} de tu Prophet. Ya está seleccionado.`:`Enviado al ${slotLabel(s)}; no pude confirmarlo leyendo el Prophet.`); log(`Receta guardada en ${slotLabel(s)}.`);
   if(state.view==="panel") renderPanel(); }
 
