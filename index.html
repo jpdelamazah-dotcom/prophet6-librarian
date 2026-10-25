@@ -788,6 +788,11 @@ body.stagefull{overflow:hidden}
 
 .gtabs{display:inline-flex;gap:4px}.gtabs button{font-size:10.5px;letter-spacing:.04em;padding:3px 9px;border-radius:10px;background:#1f2125!important;color:#a9abb1!important;border:1px solid #2c2d31!important;text-transform:none}.gtabs button.act{background:#3cc39a!important;color:#04201a!important;font-weight:600}
 #cvGram{cursor:crosshair}
+.midimon{display:inline-flex;align-items:center;gap:4px;background:none!important;border:0!important;padding:6px!important;cursor:pointer}
+.midimon i{width:5px;height:5px;border-radius:50%;background:transparent;display:inline-block}.midimon i.on{background:#64d2ff;box-shadow:0 0 6px #64d2ff}
+.mondlg{max-width:720px;width:92vw;background:#1c1d20;color:#e9e9e6;border:1px solid #333;border-radius:14px;padding:20px 22px}.mondlg h3{margin:0 0 12px}
+.montab{width:100%;border-collapse:collapse;font-size:13px}.montab td{padding:7px 8px;border-bottom:1px solid #2a2b2f;vertical-align:top}.montab td:first-child{color:#9a9ca2;width:200px}
+.montab .okc{color:#30d158}.montab .bad{color:#ff453a}.monbtns{display:flex;gap:8px;margin-top:14px}
 .stage.arch.full .sface{grid-template-columns:1fr!important;grid-template-rows:auto minmax(0,1fr)!important}
 .stage.arch.full .sarch{grid-column:1/-1!important;grid-row:2!important;display:flex;flex-direction:column}
 .stage.arch.full .sarch .archsvg{width:100%;height:100%;flex:1;min-height:0;display:block}
@@ -830,7 +835,7 @@ body.stagefull{overflow:hidden}
     <button data-mode="ver">Solo ver</button><button data-mode="escuchar">Escuchar</button><button data-mode="editar">Editar</button>
   </div>
   <button class="keybtn" id="btnKey" title="¿En qué tonalidad está lo que suena?">♪ Tono</button><button class="inspbtn act" id="btnInsp" title="Mostrar u ocultar el panel derecho (tecla I)"><svg width="18" height="14" viewBox="0 0 18 14" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="1" y="1" width="16" height="12" rx="2"/><line x1="11.5" y1="1" x2="11.5" y2="13"/></svg></button>
-  <div class="conn"><span class="led" id="led"></span><span id="status">Desconectado</span><button class="pri" id="btnConnect">Conectar</button></div>
+  <div class="conn"><button class="midimon" id="btnMon" title="Estado MIDI: qué llega y qué sale del Prophet"><span class="led" id="led"></span><i id="monIn"></i></button><span id="status">Desconectado</span><button class="pri" id="btnConnect">Conectar</button></div>
 </header>
 <div id="progress"><div id="bar"></div></div>
 <div class="wrap">
@@ -1036,6 +1041,26 @@ function fillPorts(){
     sel.value=[...ports.values()].some(p=>p.id===cur)?cur:(p6?p6.id:sel.value); };
   fill($("#selIn"),state.midi.inputs); fill($("#selOut"),state.midi.outputs); bindPorts();
 }
+function agoTxt(t){ if(!t) return "nunca"; const s=Math.round((Date.now()-t)/1000); return s<2?"recién":s<60?`hace ${s} s`:s<3600?`hace ${Math.round(s/60)} min`:"hace más de 1 h"; }
+function renderMon(){ const el=document.getElementById("monBody"); if(!el) return; const pi=state.in, po=state.out, ports=state.midi?[...state.midi.inputs.values()].map(p=>p.name):[];
+  const row=(k,v,ok)=>`<tr><td>${k}</td><td>${ok===true?'<b class="okc">✓</b> ':ok===false?'<b class="bad">✕</b> ':""}${v}</td></tr>`;
+  el.innerHTML=`<table class="montab">
+  ${row("Acceso MIDI",state.midi?"concedido":"no conectado — pulsa «Reconectar MIDI»",!!state.midi)}
+  ${row("Entrada (Prophet → app)",pi?`${esc(pi.name)} · ${pi.state==="connected"?"conectada":"desconectada"}`:"ninguna",!!pi&&pi.state==="connected")}
+  ${row("Salida (app → Prophet)",po?`${esc(po.name)} · ${po.state==="connected"?"conectada":"desconectada"}`:"ninguna",!!po&&po.state==="connected")}
+  ${row("Mensajes recibidos",`${MON.in} · notas ${MON.notes} · programas ${MON.pc} · CC/NRPN ${MON.nrpn} · SysEx ${MON.sysex}`,MON.in>0)}
+  ${row("Último recibido",MON.lastIn?`${esc(MON.lastIn)} · ${agoTxt(MON.lastInT)}`:"nada todavía")}
+  ${row("Último enviado",MON.lastOut?`${esc(MON.lastOut)} · ${agoTxt(MON.lastOutT)}`:"nada todavía")}
+  ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgT?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:" (según la app)"):"desconocido")}
+  ${row("Puertos que ve Chrome",ports.length?ports.map(esc).join(" · "):"ninguno")}</table>
+  <p id="monTest" class="hint">${MON.test||"Toca una tecla del Prophet: el contador de notas debería subir y el punto verde parpadear."}</p>`; }
+async function monTestRun(){ MON.test="Preguntándole al Prophet…"; renderMon(); let r=null; try{ r=await readEdit(); }catch(e){}
+  MON.test=r?"✓ El Prophet responde: la conexión en ambos sentidos funciona.":"✕ El Prophet no responde. Revisa: cable USB, que el Prophet esté encendido, que ninguna otra app (Logic, otro Chrome) esté usando el MIDI, y pulsa «Reconectar MIDI»."; renderMon(); }
+async function monReconnect(){ MON.test="Reconectando…"; renderMon(); try{ state.midi=null; await connect(); }catch(e){} MON.test=(state.in&&state.out)?"Reconectado. Toca una tecla o pulsa «Probar conexión».":"No encontré el Prophet entre los puertos MIDI."; renderMon(); }
+function openMon(){ const d=document.createElement("dialog"); d.id="monDlg"; d.className="mondlg"; d.innerHTML=`<h3>Conexión MIDI con el Prophet</h3><div id="monBody"></div><div class="monbtns"><button id="monTest1">Probar conexión</button><button id="monRe">Reconectar MIDI</button><span style="flex:1"></span><button class="pri" id="monX">Cerrar</button></div>`;
+  document.body.appendChild(d); d.showModal(); renderMon(); const iv=setInterval(renderMon,1000);
+  d.querySelector("#monTest1").onclick=monTestRun; d.querySelector("#monRe").onclick=monReconnect; const close=()=>{ clearInterval(iv); d.close(); d.remove(); }; d.querySelector("#monX").onclick=close; d.addEventListener("cancel",close); }
+document.addEventListener("click",e=>{ if(e.target.closest("#btnMon")) openMon(); });
 function bindPorts(){
   if(!state.midi) return;
   if(state.in) state.in.onmidimessage=null;
@@ -1051,9 +1076,12 @@ let blockedNote=0;
 function send(b){ if(!state.out) throw new Error("Sin salida MIDI");
   const isPC=((b[0]&0xF0)===0xC0)||(((b[0]&0xF0)===0xB0)&&(b[1]===0||b[1]===32));
   if(state.safe&&!isReadRequest(b)&&!(state.allowPC&&isPC)&&!(state.allowPC&&state.bpmSending&&(b[0]&0xF0)===0xB0)&&!(state.allowPC&&state.previewing&&((b[0]&0xF0)===0x90||(b[0]&0xF0)===0x80||((b[0]&0xF0)===0xB0&&b[1]===123)))){ if(Date.now()-blockedNote>1500){ blockedNote=Date.now(); toast(isPC?"Estás en «Solo ver». Para escuchar sonidos desde la app, elige «Escuchar» arriba a la derecha.":"Estás en modo «"+(state.allowPC?"Escuchar":"Solo ver")+"»: no se envió nada al Prophet. Para editar, elige «Editar» arriba a la derecha."); } return false; }
-  state.out.send(b); return true; }
+  state.out.send(b); MON.out++; MON.lastOut=midiTxt(b); MON.lastOutT=Date.now(); return true; }
+const MON={in:0,out:0,lastIn:"",lastInT:0,lastOut:"",lastOutT:0,notes:0,pc:0,nrpn:0,sysex:0};
+function midiTxt(d){ const t=d[0]&0xF0, ch=(d[0]&15)+1; if(d[0]===0xF0) return `SysEx (${d.length} bytes)`; if(t===0x90) return `Nota ${noteNm(d[1])} vel ${d[2]} (canal ${ch})`; if(t===0x80) return `Suelta ${noteNm(d[1])} (canal ${ch})`; if(t===0xC0) return `Cambio de programa ${d[1]} (canal ${ch})`; if(t===0xB0) return `CC ${d[1]} = ${d[2]} (canal ${ch})`; if(t===0xD0) return `Aftertouch ${d[1]}`; if(t===0xE0) return `Pitch bend`; return "0x"+d[0].toString(16); }
+function monBlink(){ const i=document.getElementById("monIn"); if(!i) return; i.classList.add("on"); clearTimeout(MON.bt); MON.bt=setTimeout(()=>i.classList.remove("on"),120); }
 function onMsg(e){
-  const d=e.data;
+  const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
   // --- mensajes que el Prophet transmite al tocarlo (solo se escuchan) ---
   if((d[0]&0xF0)===0x90&&d.length>=3){ state.rxNotes=true; stageNote(d[1],d[2]); return; }
