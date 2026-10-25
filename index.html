@@ -1087,7 +1087,8 @@ function followProg(p,how){ if(state.curProg===p) return; state.curProg=p; state
 // Reconoce qué programa está sonando comparando el edit buffer con la biblioteca (por si el Prophet no envía Program Change)
 function slotKey(dt){ let h=2166136261; for(let i=0;i<dt.length;i++){ h^=dt[i]; h=Math.imul(h,16777619); } return (h>>>0)+":"+dt.length; }
 function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slotIdx||state.slotIdxN!==n){ state.slotIdx=new Map(); for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data) continue; const key=slotKey(v.data); const a=state.slotIdx.get(key)||[]; a.push(+k); state.slotIdx.set(key,a); } state.slotIdxN=n; }
-  const hits=state.slotIdx.get(slotKey(data)); if(!hits||!hits.length) return null; if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
+  let hits=state.slotIdx.get(slotKey(data));
+  if(!hits||!hits.length){ const nm=getName(data); if(!nm) return null; let best=null, bd=1e9; for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(v.data[i]!==data[i]) df++; if(df<bd){ bd=df; best=+k; } } return bd<=6?best:null; } if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
@@ -2319,7 +2320,7 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=
     for(const p of X.spf){ const r=p.a/ref; if(r<1e-6) continue; const c=Math.log(p.f/20)/Math.log(1000)*NP; for(let k=Math.max(0,Math.floor(c-14));k<Math.min(NP,c+14);k++){ const d=(k-c)/3.2; lin[k]+=r*r*Math.exp(-d*d)*e*e; } }
     for(let i=0;i<NP;i++){ cur[i]=10*Math.log10(lin[i]+1e-12)-22+(Math.sin(i*12.9898+performance.now()/90)*0.8); } }
   if(!SPAN.peak||SPAN.peak.length!==NP){ SPAN.peak=Float32Array.from(cur); SPAN.avg=Float32Array.from(cur); }
-  for(let i=0;i<NP;i++){ SPAN.peak[i]=Math.max(cur[i],SPAN.peak[i]-0.25); SPAN.avg[i]=SPAN.avg[i]*0.97+cur[i]*0.03; }
+  for(let i=0;i<NP;i++){ SPAN.peak[i]=Math.max(cur[i],SPAN.peak[i]-(X.silent?1.5:0.25)); SPAN.avg[i]=X.silent?Math.max(-140,SPAN.avg[i]-1.2):SPAN.avg[i]*0.97+cur[i]*0.03; }
   const xi=i=>L+i/(NP-1)*W;
   // relleno con colores por zona + línea
   g.beginPath(); g.moveTo(L,T+H); for(let i=0;i<NP;i++) g.lineTo(xi(i),dy(cur[i])); g.lineTo(L+W,T+H); g.closePath();
@@ -2346,6 +2347,7 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=
   // cursor
   if(SPAN.hover!=null&&SPAN.hover>L){ const x=SPAN.hover, f=20*Math.pow(1000,(x-L)/W), i=Math.max(0,Math.min(NP-1,Math.round((x-L)/W*(NP-1)))), v=cur[i];
     g.strokeStyle="rgba(255,255,255,.5)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); const t=`${f<1000?Math.round(f)+" Hz":(f/1000).toFixed(2)+" kHz"} · ${noteNm(Math.round(69+12*Math.log2(f/440)))} · ${v>-139?v.toFixed(0)+" dB":"—"}`; g.font="11px 'IBM Plex Mono',monospace"; const tw=g.measureText(t).width; const bx=Math.min(x+8,w-tw-12); g.fillStyle="rgba(20,20,24,.92)"; g.fillRect(bx,T+16,tw+10,18); g.fillStyle="#fff"; g.fillText(t,bx+5,T+29); }
+  if(X.silent){ g.font="600 14px 'IBM Plex Sans',sans-serif"; g.fillStyle="rgba(233,233,230,.55)"; g.textAlign="center"; g.fillText("Silencio · toca una tecla del Prophet para ver su espectro",L+W/2,T+H*0.62); g.font="11.5px 'IBM Plex Sans',sans-serif"; g.fillStyle="rgba(233,233,230,.35)"; g.fillText("La curva naranja muestra cómo está ajustado el filtro de este sonido",L+W/2,T+H*0.62+20); g.textAlign="left"; }
   // leyenda
   g.font="10px 'IBM Plex Sans',sans-serif"; const lg=[["ahora",null],["promedio","rgba(255,255,255,.7)"],["picos","rgba(255,90,70,.8)"]].concat(X.cfg?[["filtro (dB der.)","#ff6a3d"]]:[]).concat(TGT.fp?[["canción","rgba(191,90,242,.95)"]]:[]); let lx=L+W-8; g.textAlign="right";
   for(const [t,c] of lg.reverse()){ g.fillStyle=c||"#5fd3d6"; g.fillText("— "+t,lx,h-4); lx-=g.measureText("— "+t).width+12; } g.textAlign="left"; }
@@ -2599,12 +2601,12 @@ function drawStage(){ STG.raf=0; if(!STG._fr||performance.now()-STG._fr>700){ ST
   else if(d&&A){ const ce=curEnv(d,now), n=STG.last??57, f0=440*Math.pow(2,(n-69+pitchOff(pv(d,P.osc1Freq)))/12), amp=ce.amp==null?0.85:ce.amp;
     const {y,cutHz}=simSignal(d,f0,ce.fil==null?0.6:ce.fil);
     grid(A.g,A.w,A.h); A.g.strokeStyle=ce.amp==null?"rgba(255,106,61,.55)":"#ff6a3d"; A.g.lineWidth=2; A.g.shadowColor="rgba(255,106,61,.7)"; A.g.shadowBlur=ce.amp==null?0:10;
-    A.g.beginPath(); const N=y.length*0.625|0; for(let i=0;i<N;i++){ const x=i/N*A.w, yy=A.h/2-y[i]*amp*A.h*0.42; i?A.g.lineTo(x,yy):A.g.moveTo(x,yy); } A.g.stroke(); A.g.shadowBlur=0;
+    A.g.beginPath(); const N=y.length*0.625|0, sil=ce.amp==null; for(let i=0;i<N;i++){ const x=i/N*A.w, yy=A.h/2-(sil?0:y[i]*amp*A.h*0.42); i?A.g.lineTo(x,yy):A.g.moveTo(x,yy); } A.g.stroke(); A.g.shadowBlur=0;
     document.getElementById("stHz").textContent=ce.amp==null?"Toca una tecla del Prophet":`${noteNm(n)} · ${f0.toFixed(1)} Hz`;
-    const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
-    if(ps.noise>0.02) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
+    const cfg=filtCfg(d,ce.fil==null?0.6:ce.fil), ps=partialsSim(d,f0), spf=ce.amp==null?[]:ps.list.map(p=>({f:p.f,a:p.a*resGain(p.f)*Math.min(2,filtH(p.f,cfg))/2}));
+    if(ps.noise>0.02&&ce.amp!=null) for(let i=0;i<40;i++){ const f=FMIN*Math.exp(Math.random()*LFR); spf.push({f,a:ps.noise*0.12*Math.min(2,filtH(f,cfg))/2}); }
     const left=STG.parts.length;
-    drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,energy:ce.amp==null?0.12:ce.amp,ref:Math.max(1e-6,...ps.list.map(p=>p.a*resGain(p.f)/2))});
+    drawExtras({d,spf,cfg,ce,now,f0,amp:ce.amp??0,silent:ce.amp==null,energy:ce.amp==null?0:ce.amp,ref:Math.max(1e-6,...ps.list.map(p=>p.a*resGain(p.f)/2))});
     if((STG.at||0)>0.01) busy=true;
     { const sc2=document.getElementById("stCut"); if(sc2) sc2.textContent=`Filtro ≈ ${fmtHz(cutHz)}`; }
     // envolventes
