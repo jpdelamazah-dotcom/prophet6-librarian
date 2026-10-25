@@ -767,6 +767,24 @@ body.stagefull{overflow:hidden}
 @media (max-width:1100px){ .stage:not(.full):not(.arch) .sface{grid-template-rows:auto 220px 110px 110px 110px!important} .stage:not(.full):not(.arch) .sgram{grid-row:5} }
 
 .stage .slcd{padding-right:min(560px,52%)}.stage .slcdt{min-width:0}
+
+/* espectrograma protagonista */
+.stage:not(.full):not(.arch) .sface{grid-template-columns:1.9fr 1fr!important;grid-template-rows:auto 260px 118px 118px!important}
+.stage:not(.full):not(.arch) .sgram{grid-column:1/-1!important;grid-row:2!important}
+.stage:not(.full):not(.arch) .sspec{grid-column:1!important;grid-row:3/5!important}
+.stage:not(.full):not(.arch) .sscope{grid-column:2!important;grid-row:3!important}
+.stage:not(.full):not(.arch) .senv{grid-column:2!important;grid-row:4!important}
+.stage:not(.full):not(.arch) .sspec canvas{min-height:0}
+.stage.full .sface{grid-template-columns:1.4fr 1fr 1fr!important;grid-template-rows:auto minmax(0,1.8fr) minmax(0,1fr) minmax(0,.85fr) 110px!important}
+.stage.full .sgram{grid-column:1/-1!important;grid-row:2!important}
+.stage.full .sspec{grid-column:1!important;grid-row:3!important}.stage.full .sscope{grid-column:2!important;grid-row:3!important}.stage.full .senv{grid-column:3!important;grid-row:3!important}
+.stage.full .svoices{grid-column:1!important;grid-row:4!important}.stage.full .slfo{grid-column:2!important;grid-row:4!important}.stage.full .smix{grid-column:3!important;grid-row:4!important}
+.stage.full .skbd{grid-column:1/3!important;grid-row:5!important}.stage.full .sat{grid-column:3!important;grid-row:5!important}
+@media (max-width:1100px){ .stage:not(.full):not(.arch) .sface{grid-template-columns:1fr!important;grid-template-rows:auto 240px 200px 110px 110px!important} .stage:not(.full):not(.arch) .sgram{grid-row:2!important}.stage:not(.full):not(.arch) .sspec{grid-column:1!important;grid-row:3!important}.stage:not(.full):not(.arch) .sscope{grid-column:1!important;grid-row:4!important}.stage:not(.full):not(.arch) .senv{grid-column:1!important;grid-row:5!important}
+ .stage.full .sface{grid-template-columns:1fr 1fr!important;grid-template-rows:auto 300px 200px 150px 150px 110px 130px!important}.stage.full .sgram{grid-column:1/-1!important;grid-row:2!important}.stage.full .sspec{grid-column:1/-1!important;grid-row:3!important}.stage.full .sscope{grid-column:1!important;grid-row:4!important}.stage.full .senv{grid-column:2!important;grid-row:4!important}.stage.full .svoices{grid-column:1!important;grid-row:5!important}.stage.full .slfo{grid-column:2!important;grid-row:5!important}.stage.full .smix{grid-column:1/-1!important;grid-row:6!important}.stage.full .skbd{grid-column:1/-1!important;grid-row:7!important}.stage.full .sat{display:none} }
+
+.stage:not(.full) .slcd{padding-right:0}.stage:not(.full) .sface{padding-top:54px}.stage:not(.full) .ssrc{top:12px;max-width:calc(100% - 28px)}
+.stage .slcdt b,.stage .slcdt span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </head>
 <body>
@@ -2227,11 +2245,12 @@ function drawExtras(X){ drawAT(X); // X={d,spf,cfg,ce,now,amp,mic}
   if(G&&G.w>20&&G.h>20){ const cv=document.getElementById("cvGram"), dpr=window.devicePixelRatio||1;
     if(!STG.gram||STG.gram.width!==cv.width||STG.gram.height!==cv.height){ STG.gram=document.createElement("canvas"); STG.gram.width=cv.width; STG.gram.height=cv.height; const g0=STG.gram.getContext("2d"); g0.fillStyle="#08080a"; g0.fillRect(0,0,cv.width,cv.height); }
     const og=STG.gram.getContext("2d"), W=cv.width, H=cv.height, col=new Float32Array(H);
-    for(const p of X.spf){ const yy=H-1-Math.round(Math.log(Math.max(FMIN,p.f)/FMIN)/LFR*(H-1)); if(yy>=0&&yy<H) for(let k=-2;k<=2;k++){ const j=yy+k; if(j>=0&&j<H) col[j]+=p.a*(1-Math.abs(k)*0.3); } }
+    if(X.mic&&STG.audio){ const {fb,ac}=STG.audio, bin=ac.sampleRate/2/fb.length; for(let j=0;j<H;j++){ const f=FMIN*Math.exp((1-j/(H-1))*LFR), b=Math.round(f/bin); let db=fb[b]??-140; if(MEM.noise){ const nb=Math.floor(Math.log(Math.max(30,f)/30)/Math.log(16000/30)*NB); db=10*Math.log10(Math.max(1e-14,Math.pow(10,db/10)-Math.pow(10,(MEM.noise.bands[Math.max(0,Math.min(NB-1,nb))]+3)/10))); } col[j]=Math.max(0,(db+90)/70)/3; } }
+    else for(const p of X.spf){ const yy=H-1-Math.round(Math.log(Math.max(FMIN,p.f)/FMIN)/LFR*(H-1)); if(yy>=0&&yy<H) for(let k=-2;k<=2;k++){ const j=yy+k; if(j>=0&&j<H) col[j]+=p.a*(1-Math.abs(k)*0.3); } }
     og.drawImage(STG.gram,-2*dpr,0); og.fillStyle="#08080a"; og.fillRect(W-2*dpr,0,2*dpr,H);
     const e=X.energy; for(let j=0;j<H;j++){ const v=Math.min(1,col[j]*e*3); if(v<0.03) continue; const hue=Math.max(0,Math.min(195,(1-j/H)*230-25)); og.fillStyle=`hsla(${hue},95%,${30+v*35}%,${0.25+v*0.75})`; og.fillRect(W-2*dpr,j,2*dpr,1); }
     G.g.setTransform(1,0,0,1,0,0); G.g.drawImage(STG.gram,0,0); G.g.setTransform(dpr,0,0,dpr,0,0);
-    G.g.fillStyle="#6f7178"; G.g.font="10px 'IBM Plex Mono',monospace"; for(const f of [50,200,1000,5000]){ const y=G.h-Math.log(f/FMIN)/LFR*G.h; G.g.fillText(f>=1000?f/1000+"k":f,4,y); } }
+    G.g.fillStyle="#6f7178"; G.g.font="10px 'IBM Plex Mono',monospace"; for(const f of [50,100,200,500,1000,2000,5000,10000]){ const y=G.h-Math.log(f/FMIN)/LFR*G.h; G.g.fillStyle="rgba(255,255,255,.07)"; G.g.fillRect(0,y,G.w,1); G.g.fillStyle="#8e8e93"; G.g.fillText(f>=1000?f/1000+"k":f,4,y-2); } }
   const d=X.d; if(!d) return;
   const V=fitCanvas(document.getElementById("cvVoices"));
   if(V&&V.w>20){ const g=V.g; g.clearRect(0,0,V.w,V.h); const keys=[...STG.notes.entries()].sort((a,b)=>(a[1].off==null?0:1)-(b[1].off==null?0:1)).slice(0,6), lw=V.w/6;
