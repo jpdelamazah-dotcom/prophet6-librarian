@@ -1052,6 +1052,7 @@ function renderMon(){ const el=document.getElementById("monBody"); if(!el) retur
   ${row("Último recibido",MON.lastIn?`${esc(MON.lastIn)} · ${agoTxt(MON.lastInT)}`:"nada todavía")}
   ${row("Último enviado",MON.lastOut?`${esc(MON.lastOut)} · ${agoTxt(MON.lastOutT)}`:"nada todavía")}
   ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgT?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:" (según la app)"):"desconocido")}
+  ${row("Último cambio de programa (crudo)",MON.pcRaw||"ninguno")}
   ${row("Puertos que ve Chrome",ports.length?ports.map(esc).join(" · "):"ninguno")}</table>
   <p id="monTest" class="hint">${MON.test||"Toca una tecla del Prophet: el contador de notas debería subir y el punto verde parpadear."}</p>`; }
 async function monTestRun(){ MON.test="Preguntándole al Prophet…"; renderMon(); let r=null; try{ r=await readEdit(); }catch(e){}
@@ -1102,9 +1103,9 @@ function onMsg(e){
   if((d[0]&0xF0)===0x80&&d.length>=3){ stageNote(d[1],0); return; }
   if(d[0]===0xFA||d[0]===0xFB){ state.seqPlaying=true; schedulePanelIfLive(); return; }
   if(d[0]===0xFC){ state.seqPlaying=false; schedulePanelIfLive(); return; }
-  if((d[0]&0xF0)===0xC0&&d.length>=2){ followProg((state.bankSel||0)*100+d[1]); return; }
+  if((d[0]&0xF0)===0xC0&&d.length>=2){ MON.pcRaw=`banco CC0=${MON.cc0??"—"} · CC32=${MON.cc32??"—"} · programa ${d[1]}`; followProg((state.bankSel||0)*100+d[1]); return; }
   if(false){ log(`Programa seleccionado en el Prophet: ${slotLabel(state.curProg)}`); STG.edAt=0; state.recipeLoaded=null; if(!state.busy&&state.slots[state.curProg]){ select(state.curProg,true); try{ renderFicha(); renderNowBar(); }catch(e){} const row=document.getElementById("s"+state.curProg); if(row&&state.view==="all") row.scrollIntoView({block:"nearest"}); } stageHead(); if(!state.slots[state.curProg]&&!state.busy){ const sp=state.curProg; setTimeout(()=>requestProgram(sp,2500).then(r=>{ if(r){ orgCache.clear(); save(); if(state.view==="all") render(); toast(`Leí el ${slotLabel(sp)} que faltaba.`); } }),300); } schedulePanelIfLive(); if(state.view==="all") scheduleRender(); return; }
-  if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ if(d[2]<=9) state.bankSel=d[2]; return; }
+  if((d[0]&0xF0)===0xB0&&d.length>=3&&(d[1]===0||d[1]===32)){ MON["cc"+d[1]]=d[2]; if(d[1]===32||d[2]>0){ if(d[2]<=9) state.bankSel=d[2]; } return; }
   if((d[0]&0xF0)===0xB0&&d.length>=3){ const n=state.nrpn, cc=d[1], v=d[2];
     if(cc===99) n.msb=v; else if(cc===98) n.lsb=v; else if(cc===6) n.vmsb=v;
     else if(cc===38){ state.rxNrpn=true; const param=(n.msb<<7)|n.lsb, val=(n.vmsb<<7)|v;
@@ -1119,7 +1120,7 @@ function onMsg(e){
       const nibV=[]; for(let i=0;i*2+1<bytes.length;i++) nibV.push((bytes[2*i]&15)|((bytes[2*i+1]&15)<<4));
       const score=a=>DI.reduce((n,k,i)=>n+(a[i]!=null&&a[i]<=GMAX[k]?1:0),0); const useNib=score(nibV)>=score(bytes); const raw=useNib?nibV:bytes; const g={};
       raw.forEach((v,i)=>{ const k=DI[i]; if(k!=null) g[k]=v<=GMAX[k]?v:null; }); state.globalsRaw=raw; state.globalsBytes=bytes; state.globalsFmt=useNib?"nibbles":"bytes"; state.globalsRead=g; state.globalsReadAt=Date.now(); log("Configuración global leída del Prophet."); if(state.gWaiter){ const w=state.gWaiter; state.gWaiter=null; w(g); } return; }
-  else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data}); { const m=matchEdit(data); if(m!=null&&m!==state.curProg&&!(state.curProgHow==="app"&&Date.now()-(state.curProgT||0)<3000)&&!state.busy) followProg(m,"match"); }
+  else if(t===0x03){ const data=unpack(Array.from(d.slice(4,d.length-1))); const prev=state.editBuffer; state.editBuffer=data; resolveWait({slot:"edit",data}); { const m=matchEdit(data); if(m!=null&&m!==state.curProg&&(state.curProg==null||state.curProgHow==="match")&&!state.busy) followProg(m,"match"); }
     if(prev&&!state.learn) editFlash(prev,data);
     showLcd("EDIT",getName(data)||"(sin nombre)","Edit buffer"); if(!state.quietEdit) log(`Edit buffer recibido: "${getName(data)}"`);
     if(state.view==="panel"&&state.panelSrc==="edit") renderPanel(); }
@@ -2347,7 +2348,6 @@ function drawSpan(G,X){ const g=G.g, w=G.w, h=G.h, L=34, T=8, B=16, W=w-L-40, H=
   // cursor
   if(SPAN.hover!=null&&SPAN.hover>L){ const x=SPAN.hover, f=20*Math.pow(1000,(x-L)/W), i=Math.max(0,Math.min(NP-1,Math.round((x-L)/W*(NP-1)))), v=cur[i];
     g.strokeStyle="rgba(255,255,255,.5)"; g.beginPath(); g.moveTo(x,T); g.lineTo(x,T+H); g.stroke(); const t=`${f<1000?Math.round(f)+" Hz":(f/1000).toFixed(2)+" kHz"} · ${noteNm(Math.round(69+12*Math.log2(f/440)))} · ${v>-139?v.toFixed(0)+" dB":"—"}`; g.font="11px 'IBM Plex Mono',monospace"; const tw=g.measureText(t).width; const bx=Math.min(x+8,w-tw-12); g.fillStyle="rgba(20,20,24,.92)"; g.fillRect(bx,T+16,tw+10,18); g.fillStyle="#fff"; g.fillText(t,bx+5,T+29); }
-  if(X.silent){ g.font="600 14px 'IBM Plex Sans',sans-serif"; g.fillStyle="rgba(233,233,230,.55)"; g.textAlign="center"; g.fillText("Silencio · toca una tecla del Prophet para ver su espectro",L+W/2,T+H*0.62); g.font="11.5px 'IBM Plex Sans',sans-serif"; g.fillStyle="rgba(233,233,230,.35)"; g.fillText("La curva naranja muestra cómo está ajustado el filtro de este sonido",L+W/2,T+H*0.62+20); g.textAlign="left"; }
   // leyenda
   g.font="10px 'IBM Plex Sans',sans-serif"; const lg=[["ahora",null],["promedio","rgba(255,255,255,.7)"],["picos","rgba(255,90,70,.8)"]].concat(X.cfg?[["filtro (dB der.)","#ff6a3d"]]:[]).concat(TGT.fp?[["canción","rgba(191,90,242,.95)"]]:[]); let lx=L+W-8; g.textAlign="right";
   for(const [t,c] of lg.reverse()){ g.fillStyle=c||"#5fd3d6"; g.fillText("— "+t,lx,h-4); lx-=g.measureText("— "+t).width+12; } g.textAlign="left"; }
