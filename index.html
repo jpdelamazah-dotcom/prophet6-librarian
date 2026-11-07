@@ -1053,6 +1053,7 @@ function renderMon(){ const el=document.getElementById("monBody"); if(!el) retur
   ${row("Último enviado",MON.lastOut?`${esc(MON.lastOut)} · ${agoTxt(MON.lastOutT)}`:"nada todavía")}
   ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgT?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:" (según la app)"):"desconocido")}
   ${row("Último cambio de programa (crudo)",MON.pcRaw||"ninguno")}
+  ${row("Visor",(MON.err?"✕ "+esc(MON.err):"sin errores")+(MON.noteNoData?` · ${MON.noteNoData} notas ignoradas por no tener datos del sonido`:""),!MON.err&&!MON.noteNoData)}
   ${row("Puertos que ve Chrome",ports.length?ports.map(esc).join(" · "):"ninguno")}</table>
   <p id="monTest" class="hint">${MON.test||"Toca una tecla del Prophet: el contador de notas debería subir y el punto verde parpadear."}</p>`; }
 async function monTestRun(){ MON.test="Preguntándole al Prophet…"; renderMon(); let r=null; try{ r=await readEdit(); }catch(e){}
@@ -1090,6 +1091,7 @@ function slotKey(dt){ let h=2166136261; for(let i=0;i<dt.length;i++){ h^=dt[i]; 
 function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slotIdx||state.slotIdxN!==n){ state.slotIdx=new Map(); for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data) continue; const key=slotKey(v.data); const a=state.slotIdx.get(key)||[]; a.push(+k); state.slotIdx.set(key,a); } state.slotIdxN=n; }
   let hits=state.slotIdx.get(slotKey(data));
   if(!hits||!hits.length){ const nm=getName(data); if(!nm) return null; let best=null, bd=1e9; for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(v.data[i]!==data[i]) df++; if(df<bd||(df===bd&&+k===state.curProg)){ bd=df; best=+k; } } return bd<=6?best:null; } if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
+window.addEventListener("error",ev=>{ try{ MON.err=(ev.message||"")+" @ línea "+(ev.lineno||"?"); }catch(_){} });
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
   // NRPN en vivo (Globals → Param Send = NRPN): actualiza el edit buffer y el panel
@@ -2195,7 +2197,7 @@ function envLevel(e,now){ // e={on,off,lvlOff}  devuelve 0..1
   if(e.off==null) return at((now-e.on)/1000);
   const t=(now-e.off)/1000; return e.lvlOff*Math.exp(-t/(R/4));
 }
-function stageNote(n,vel,fromApp){ const now=performance.now(), d=stageData(); if(!d) return;
+function stageNote(n,vel,fromApp){ const now=performance.now(), d=stageData(); MON.lastNoteD=!!d; if(!d){ MON.noteNoData=(MON.noteNoData||0)+1; return; }
   if(!fromApp&&STG.src==="mic"&&STG.audio&&!STG.calib){ if(vel>0){ if(STG.cap&&STG.cap.off!=null){ const c=STG.cap; clearInterval(STG.capI); STG.cap=null; finishCapture(c); } if(![...STG.notes.values()].some(k=>k.off==null)&&!STG.cap) startCapture(n,"pasivo"); else if(STG.cap&&STG.cap.note!==n) cancelCapture(); } else stopCaptureNote(n); }
   document.querySelectorAll(`[data-key="${n}"]`).forEach(k=>k.classList.toggle("on",vel>0)); if(vel>0){ STG.notes.set(n,{on:now,off:null,vel}); STG.last=n; const hn=document.getElementById("hlNote"); if(hn) hn.textContent=noteNm(n); }
   else { const k=STG.notes.get(n); if(k&&k.off==null){ k.off=now; k.lvlA=envLevel({...ampE(d),...k,off:null},now); k.lvlF=envLevel({...filE(d),...k,off:null},now); } }
@@ -2586,7 +2588,8 @@ function fitStageRows(){ const st=document.getElementById("stage"), sg=st&&st.qu
   const top=sg.getBoundingClientRect().top+sy, avail=window.innerHeight-nbh-top-small-(parseFloat(cs.rowGap)||12)-(parseFloat(cs.paddingBottom)||14)-16;
   const v=`auto ${Math.round(Math.max(140,Math.min(440,avail)))}px ${small}px`; if(sf.style.getPropertyValue("grid-template-rows")!==v){ STG._rows=v; sf.style.setProperty("grid-template-rows",v,"important"); } }
 window.addEventListener("resize",()=>{ STG._rows=null; fitStageRows(); });
-function drawStage(){ STG.raf=0; if(!STG._fr||performance.now()-STG._fr>700){ STG._fr=performance.now(); fitStageRows(); } const sc=document.getElementById("cvScope"); if(!sc||document.hidden) return; const now=performance.now(), d=stageData();
+function drawStage(){ try{ drawStage0(); }catch(e){ STG.raf=0; MON.err=(e&&e.message||String(e))+" @ "+((e&&e.stack||"").split("\n")[1]||"").trim(); const h=document.getElementById("stHz"); if(h) h.textContent="Error visor: "+(e&&e.message); setTimeout(kickStage,500); } }
+function drawStage0(){ STG.raf=0; if(!STG._fr||performance.now()-STG._fr>700){ STG._fr=performance.now(); fitStageRows(); } const sc=document.getElementById("cvScope"); if(!sc||document.hidden) return; const now=performance.now(), d=stageData();
   const A=fitCanvas(sc), B=null, C=fitCanvas(document.getElementById("cvEnv")); let busy=false;
   if(!A||!C||A.w<20||C.w<20||A.h<10||C.h<10){ STG.raf=0; setTimeout(kickStage,300); return; }
   const led=document.getElementById("stLed");
