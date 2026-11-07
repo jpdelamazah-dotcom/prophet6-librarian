@@ -1038,7 +1038,7 @@ function fillPorts(){
   const fill=(sel,ports)=>{ const cur=sel.value; sel.innerHTML="";
     for(const p of ports.values()){ const o=document.createElement("option"); o.value=p.id; o.textContent=p.name; sel.appendChild(o); }
     const p6=[...ports.values()].find(p=>/prophet|p6|sequential|dsi/i.test(p.name));
-    sel.value=[...ports.values()].some(p=>p.id===cur)?cur:(p6?p6.id:sel.value); };
+    sel.value=p6?p6.id:([...ports.values()].some(p=>p.id===cur)?cur:sel.value); };
   fill($("#selIn"),state.midi.inputs); fill($("#selOut"),state.midi.outputs); bindPorts();
 }
 function agoTxt(t){ if(!t) return "nunca"; const s=Math.round((Date.now()-t)/1000); return s<2?"recién":s<60?`hace ${s} s`:s<3600?`hace ${Math.round(s/60)} min`:"hace más de 1 h"; }
@@ -1049,7 +1049,7 @@ function renderMon(){ const el=document.getElementById("monBody"); if(!el) retur
   ${row("Entrada (Prophet → app)",pi?`${esc(pi.name)} · ${pi.state==="connected"?"conectada":"desconectada"}`:"ninguna",!!pi&&pi.state==="connected")}
   ${row("Salida (app → Prophet)",po?`${esc(po.name)} · ${po.state==="connected"?"conectada":"desconectada"}`:"ninguna",!!po&&po.state==="connected")}
   ${row("Mensajes recibidos",`${MON.in} · notas ${MON.notes} · programas ${MON.pc} · CC/NRPN ${MON.nrpn} · SysEx ${MON.sysex}`,MON.in>0)}
-  ${row("Último recibido",MON.lastIn?`${esc(MON.lastIn)} · ${agoTxt(MON.lastInT)}`:"nada todavía")}
+  ${row("Último recibido",MON.lastIn?`${esc(MON.lastIn)} · ${agoTxt(MON.lastInT)}${MON.lastPort?" · por "+esc(MON.lastPort):""}`:"nada todavía")}
   ${row("Último enviado",MON.lastOut?`${esc(MON.lastOut)} · ${agoTxt(MON.lastOutT)}`:"nada todavía")}
   ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgHow==="pc"?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:state.curProgHow==="match"?" (deducido comparando el sonido con la biblioteca)":" (elegido desde la app)"):"desconocido")}
   ${row("Último cambio de programa (crudo)",MON.pcRaw||"ninguno")}
@@ -1067,9 +1067,9 @@ function openMon(){ const d=document.createElement("dialog"); d.id="monDlg"; d.c
 document.addEventListener("click",e=>{ if(e.target.closest("#btnMon")) openMon(); });
 function bindPorts(){
   if(!state.midi) return;
-  if(state.in) state.in.onmidimessage=null;
+  for(const p of state.midi.inputs.values()) p.onmidimessage=null;
   state.in=state.midi.inputs.get($("#selIn").value)||null; state.out=state.midi.outputs.get($("#selOut").value)||null;
-  if(state.in) state.in.onmidimessage=onMsg;
+  for(const p of state.midi.inputs.values()) p.onmidimessage=e=>onMsgAny(e,p);
   const ok=!!(state.in&&state.out);
   if(!state.busy) setStatus(ok?"Conectado":"Elige puertos en Ajustes",ok?"on":""); if(ok&&!state.autoReadDone){ state.autoReadDone=true; setTimeout(autoRead,600); } const bc=$("#btnConnect"); if(bc) bc.style.display=ok?"none":"";
   ["#btnReadEdit","#btnReadUser","#btnReadAll"].forEach(s=>$(s).disabled=!ok||state.busy);
@@ -1096,6 +1096,10 @@ function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slo
     for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(i!==bi&&v.data[i]!==data[i]) df++; if(df<=6){ dfs[k]=df; hits.push(+k); } }
     if(!hits.length) return exact.length?Math.min(...exact):null; const us=hits.filter(h=>h<500); if(us.length) hits=us; const m=Math.min(...hits.map(h=>dfs[h])); hits=hits.filter(h=>dfs[h]===m); }
   if(hits.includes(state.curProg)) return state.curProg; const user=hits.filter(h=>h<500); return user.length?Math.min(...user):Math.min(...hits); }
+// Mensajes de cualquier entrada: el Prophet puede llegar por USB o por su cable MIDI a la interfaz. Se ignoran duplicados.
+const DUP=new Map();
+function onMsgAny(e,port){ const d=e.data; if(!d||!d.length) return; if(d[0]!==0xF0&&d[0]<0xF8){ const k=Array.from(d).join(","), t=performance.now(), last=DUP.get(k); if(last&&last.port!==port.id&&t-last.t<40) return; DUP.set(k,{t,port:port.id}); if(DUP.size>200) DUP.clear(); }
+  if(d[0]===0xF0&&state.in&&port.id!==state.in.id) return; MON.lastPort=port.name; onMsg(e); }
 window.addEventListener("error",ev=>{ try{ MON.err=(ev.message||"")+" @ línea "+(ev.lineno||"?"); }catch(_){} });
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
