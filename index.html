@@ -1051,8 +1051,10 @@ function renderMon(){ const el=document.getElementById("monBody"); if(!el) retur
   ${row("Mensajes recibidos",`${MON.in} · notas ${MON.notes} · programas ${MON.pc} · CC/NRPN ${MON.nrpn} · SysEx ${MON.sysex}`,MON.in>0)}
   ${row("Último recibido",MON.lastIn?`${esc(MON.lastIn)} · ${agoTxt(MON.lastInT)}`:"nada todavía")}
   ${row("Último enviado",MON.lastOut?`${esc(MON.lastOut)} · ${agoTxt(MON.lastOutT)}`:"nada todavía")}
-  ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgT?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:" (según la app)"):"desconocido")}
+  ${row("Programa en el Prophet",state.curProg!=null?slotLabel(state.curProg)+(state.curProgHow==="pc"?` (avisado por el Prophet ${agoTxt(state.curProgT)})`:state.curProgHow==="match"?" (deducido comparando el sonido con la biblioteca)":" (elegido desde la app)"):"desconocido")}
   ${row("Último cambio de programa (crudo)",MON.pcRaw||"ninguno")}
+  ${(()=>{ const g=state.globalsRead; if(!g) return row("Configuración MIDI del Prophet","leyendo…"); const o=g[1033], x=g[1029], lc=g[1035]; const on=["Off","MIDI (cable)","USB","MIDI + USB"][o]??"?", xm=["Off","CC","NRPN"][x]??"?"; const ok=o===2||o===3;
+    return row("Configuración MIDI del Prophet",`MIDI Out: <b>${on}</b> · Param Xmit: <b>${xm}</b> · Local Control: <b>${lc===0?"Off":lc===1?"On":"?"}</b>${ok?"":" — <b>así el Prophet no manda tus notas a la app por USB.</b> En el Prophet: GLOBALS → botón 9 → elige «USb» o «btH»."}`,ok); })()}
   ${row("Visor",(MON.err?"✕ "+esc(MON.err):"sin errores")+(MON.noteNoData?` · ${MON.noteNoData} notas ignoradas por no tener datos del sonido`:""),!MON.err&&!MON.noteNoData)}
   ${row("Puertos que ve Chrome",ports.length?ports.map(esc).join(" · "):"ninguno")}</table>
   <p id="monTest" class="hint">${MON.test||"Toca una tecla del Prophet: el contador de notas debería subir y el punto verde parpadear."}</p>`; }
@@ -1060,7 +1062,7 @@ async function monTestRun(){ MON.test="Preguntándole al Prophet…"; renderMon(
   MON.test=r?"✓ El Prophet responde: la conexión en ambos sentidos funciona.":"✕ El Prophet no responde. Revisa: cable USB, que el Prophet esté encendido, que ninguna otra app (Logic, otro Chrome) esté usando el MIDI, y pulsa «Reconectar MIDI»."; renderMon(); }
 async function monReconnect(){ MON.test="Reconectando…"; renderMon(); try{ state.midi=null; await connect(); }catch(e){} MON.test=(state.in&&state.out)?"Reconectado. Toca una tecla o pulsa «Probar conexión».":"No encontré el Prophet entre los puertos MIDI."; renderMon(); }
 function openMon(){ const d=document.createElement("dialog"); d.id="monDlg"; d.className="mondlg"; d.innerHTML=`<h3>Conexión MIDI con el Prophet</h3><div id="monBody"></div><div class="monbtns"><button id="monTest1">Probar conexión</button><button id="monRe">Reconectar MIDI</button><span style="flex:1"></span><button class="pri" id="monX">Cerrar</button></div>`;
-  document.body.appendChild(d); d.showModal(); renderMon(); const iv=setInterval(renderMon,1000);
+  document.body.appendChild(d); d.showModal(); renderMon(); if(state.out&&!state.busy) readGlobals().then(renderMon).catch(()=>{}); const iv=setInterval(renderMon,1000);
   d.querySelector("#monTest1").onclick=monTestRun; d.querySelector("#monRe").onclick=monReconnect; const close=()=>{ clearInterval(iv); d.close(); d.remove(); }; d.querySelector("#monX").onclick=close; d.addEventListener("cancel",close); }
 document.addEventListener("click",e=>{ if(e.target.closest("#btnMon")) openMon(); });
 function bindPorts(){
@@ -1090,7 +1092,10 @@ function followProg(p,how){ if(state.curProg===p) return; state.curProg=p; state
 function slotKey(dt){ let h=2166136261; for(let i=0;i<dt.length;i++){ h^=dt[i]; h=Math.imul(h,16777619); } return (h>>>0)+":"+dt.length; }
 function matchEdit(data){ const n=Object.keys(state.slots).length; if(!state.slotIdx||state.slotIdxN!==n){ state.slotIdx=new Map(); for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data) continue; const key=slotKey(v.data); const a=state.slotIdx.get(key)||[]; a.push(+k); state.slotIdx.set(key,a); } state.slotIdxN=n; }
   let hits=state.slotIdx.get(slotKey(data));
-  if(!hits||!hits.length){ const nm=getName(data); if(!nm) return null; let best=null, bd=1e9; for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(v.data[i]!==data[i]) df++; if(df<bd||(df===bd&&+k===state.curProg)){ bd=df; best=+k; } } return bd<=6?best:null; } if(hits.includes(state.curProg)) return state.curProg; return hits.length===1?hits[0]:Math.min(...hits); }
+  if(!hits||!hits.length||!hits.some(h=>h<500)){ const exact=hits||[]; const nm=getName(data); if(!nm) return exact.length?Math.min(...exact):null; const bi=idx(P.bpm); hits=[]; let bd=1e9; const dfs={};
+    for(const [k,v] of Object.entries(state.slots)){ if(!v||!v.data||v.data.length!==data.length||getName(v.data)!==nm) continue; let df=0; for(let i=0;i<data.length&&df<=6;i++) if(i!==bi&&v.data[i]!==data[i]) df++; if(df<=6){ dfs[k]=df; hits.push(+k); } }
+    if(!hits.length) return exact.length?Math.min(...exact):null; const us=hits.filter(h=>h<500); if(us.length) hits=us; const m=Math.min(...hits.map(h=>dfs[h])); hits=hits.filter(h=>dfs[h]===m); }
+  if(hits.includes(state.curProg)) return state.curProg; const user=hits.filter(h=>h<500); return user.length?Math.min(...user):Math.min(...hits); }
 window.addEventListener("error",ev=>{ try{ MON.err=(ev.message||"")+" @ línea "+(ev.lineno||"?"); }catch(_){} });
 function onMsg(e){
   const d=e.data; if(d&&d.length&&d[0]!==0xF8&&d[0]!==0xFE){ MON.in++; MON.lastIn=midiTxt(d); MON.lastInT=Date.now(); const t=d[0]&0xF0; if(t===0x90) MON.notes++; else if(t===0xC0) MON.pc++; else if(t===0xB0) MON.nrpn++; else if(d[0]===0xF0) MON.sysex++; monBlink(); if(document.getElementById("monDlg")) renderMon(); }
